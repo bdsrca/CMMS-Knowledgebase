@@ -1,0 +1,23 @@
+flowchart TD
+    Admin[Admin user] --> UI[Knowledge Base settings UI]
+    UI --> SourcesAPI[Sources API]
+    UI --> DocsAPI[Documents API]
+    UI --> JobsAPI[Jobs and worker APIs]
+
+    SourcesAPI --> DB[(Postgres)]
+    DocsAPI --> DB
+    DocsAPI --> JobStore[Ingest job store]
+    JobsAPI --> Runner[Ingest runner]
+    JobStore --> DB
+    Runner --> Chunker[Text chunker]
+    Runner --> Embedder[Embedding provider]
+    Chunker --> DB
+    Embedder --> DB
+
+    User[Technician or admin] --> AskAPI[KB ask/search API]
+    AskAPI --> Retrieval[Hybrid retrieval]
+    Retrieval --> DB
+    Retrieval --> Chat[AI answer generation]
+    Chat --> Answer[Cited answer + confidence + next actions]
+    AskAPI --> QueryLog[Non-blocking query log]
+    QueryLog --> DB

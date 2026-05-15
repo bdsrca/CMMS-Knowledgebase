@@ -1,0 +1,13 @@
+flowchart LR
+    Source[KB source] --> Document[Document]
+    Document --> Job[Ingest job]
+    Job --> Claim[Claim job]
+    Claim --> Chunk[Split into overlapping chunks]
+    Chunk --> Embed[Batch embeddings]
+    Embed --> Store[Persist chunks + vectors]
+    Store --> Ask[User question]
+    Ask --> Retrieve[FTS + vector retrieval]
+    Retrieve --> Fuse[Rank fusion]
+    Fuse --> Answer[Grounded answer]
+    Answer --> Cite[Citations + next actions]
+    Cite --> Log[Query log]

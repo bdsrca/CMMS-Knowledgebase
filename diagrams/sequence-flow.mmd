@@ -1,0 +1,28 @@
+sequenceDiagram
+    participant Admin
+    participant UI as KB Settings UI
+    participant API as Tenant API
+    participant Jobs as Ingest Job Store
+    participant Runner as Ingest Runner
+    participant DB as Postgres + Vector Index
+    participant User
+    participant Ask as Ask/Search API
+    participant AI as AI Runtime
+
+    Admin->>UI: Save SOP or FAQ document
+    UI->>API: POST document with sourceId and rawText
+    API->>DB: Create or update document
+    API->>Jobs: Create PENDING reindex job
+    API-->>UI: Return document + jobId
+    Jobs->>Runner: Claim job
+    Runner->>DB: Read active documents for source
+    Runner->>Runner: Chunk text and create embeddings
+    Runner->>DB: Replace searchable chunks
+    Runner->>Jobs: Mark COMPLETED or FAILED
+
+    User->>Ask: Ask maintenance question
+    Ask->>DB: Retrieve FTS and vector hits
+    Ask->>AI: Send grounded context only
+    AI-->>Ask: JSON answer with confidence and actions
+    Ask->>DB: Write query log after response
+    Ask-->>User: Return cited answer
