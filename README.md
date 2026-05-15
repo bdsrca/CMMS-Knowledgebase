@@ -17,7 +17,8 @@ For a more formal write-up, see [PAPER.md](PAPER.md).
 **Project type:** Technical portfolio case study  
 **Domain:** CMMS, enterprise maintenance, multi-tenant SaaS, AI knowledge retrieval  
 **Primary users:** Maintenance admins, planners, supervisors, technicians, and support teams  
-**Core idea:** Convert approved maintenance knowledge into tenant-aware, searchable, cited AI answers.
+**Core idea:** Convert approved maintenance knowledge into tenant-aware, searchable, cited AI
+answers.
 
 Core capabilities:
 
@@ -54,18 +55,22 @@ and backend architecture:
 - An admin-facing Knowledge Base page for source management and document intake.
 - Source records for SOPs, manuals, FAQs, help articles, PM rules, and inventory guidance.
 - Document records with title, language, raw text, metadata, versioning, and source ownership.
-- Reindex jobs that move through visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
+- Reindex jobs that move through visible states such as `PENDING`, `PROCESSING`, `COMPLETED`,
+  and `FAILED`.
 - A chunking and embedding pipeline that turns documents into searchable knowledge chunks.
 - Hybrid retrieval that combines full-text search and vector search.
-- An AI answer path that returns answer text, citations, confidence, next actions, and retrieved evidence.
-- A query-log path that supports review and improvement without storing raw private document content.
+- An AI answer path that returns answer text, citations, confidence, next actions, and retrieved
+  evidence.
+- A query-log path that supports review and improvement without storing raw private document
+  content.
 
 ## High-Level Architecture
 
 The architecture is split into three visible zones:
 
 - **Knowledge Sources:** SOPs, FAQs, manuals, help articles, PM rules, and inventory rules.
-- **Controlled KB Pipeline:** source management, document intake, asynchronous ingest jobs, chunking, embeddings, and hybrid retrieval.
+- **Controlled KB Pipeline:** source management, document intake, asynchronous ingest jobs,
+  chunking, embeddings, and hybrid retrieval.
 - **CMMS AI Assistant:** cited answers, confidence score, next actions, and query logging.
 
 The bottom layer is the real differentiator: tenant isolation, role access, and no private data
@@ -120,14 +125,22 @@ improvements.
 
 ## Technical Highlights
 
-- **Tenant-aware boundaries:** Sources, documents, chunks, jobs, and query logs are tenant-scoped so knowledge from one organization cannot leak into another.
-- **Role-aware retrieval:** User role and UI context are applied before retrieval, which helps keep admin-only documents protected.
-- **Asynchronous ingest:** Document saves can return quickly while chunking and embeddings run through visible background jobs.
-- **Hybrid search:** Full-text search catches exact maintenance terms, while vector search catches semantic matches. Rank fusion combines both.
-- **Cited answer model:** The assistant returns citations and confidence so users can inspect the evidence behind an answer.
-- **Privacy-conscious logging:** Query logs store metadata, timing, confidence, retrieved chunk IDs, and citation IDs, not raw SOP text.
-- **Operational next actions:** Answers can include actions such as opening work orders, inventory, PM, equipment, or settings pages.
-- **Failure visibility:** Job status and retry count make ingest failures observable instead of hiding them behind the UI.
+- **Tenant-aware boundaries:** Sources, documents, chunks, jobs, and query logs are
+  tenant-scoped so knowledge from one organization cannot leak into another.
+- **Role-aware retrieval:** User role and UI context are applied before retrieval, which helps
+  keep admin-only documents protected.
+- **Asynchronous ingest:** Document saves can return quickly while chunking and embeddings run
+  through visible background jobs.
+- **Hybrid search:** Full-text search catches exact maintenance terms, while vector search
+  catches semantic matches. Rank fusion combines both.
+- **Cited answer model:** The assistant returns citations and confidence so users can inspect
+  the evidence behind an answer.
+- **Privacy-conscious logging:** Query logs store metadata, timing, confidence, retrieved chunk
+  IDs, and citation IDs, not raw SOP text.
+- **Operational next actions:** Answers can include actions such as opening work orders,
+  inventory, PM, equipment, or settings pages.
+- **Failure visibility:** Job status and retry count make ingest failures observable instead of
+  hiding them behind the UI.
 
 ## Engineering Constraints
 
@@ -146,9 +159,11 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 
 - A technician asks how to start using the AI helper and receives a cited onboarding answer.
 - A planner asks why PM-generated work orders behave differently from manual work orders.
-- A storeroom lead asks why inventory did not change after approval and receives an answer grounded in issue rules.
+- A storeroom lead asks why inventory did not change after approval and receives an answer
+  grounded in issue rules.
 - An admin asks who can change settings and receives role-aware guidance.
-- A supervisor asks when to use waiting-parts status and gets next actions linked to the relevant process.
+- A supervisor asks when to use waiting-parts status and gets next actions linked to the
+  relevant process.
 - A maintenance lead reviews low-confidence queries to identify missing or stale SOP content.
 
 ## Screenshots
@@ -159,9 +174,12 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 
 What it demonstrates:
 
-- **Product workflow:** Admins can inspect registered knowledge sources, active state, document counts, update timestamps, and explicit reindex actions.
-- **Engineering decision:** Knowledge is organized by tenant-scoped sources instead of being pushed directly into an unstructured assistant prompt.
-- **Technical capability:** Source status, document count, default-pack metadata, and reindex triggers make indexing behavior visible and reviewable.
+- **Product workflow:** Admins can inspect registered knowledge sources, active state, document
+  counts, update timestamps, and explicit reindex actions.
+- **Engineering decision:** Knowledge is organized by tenant-scoped sources instead of being
+  pushed directly into an unstructured assistant prompt.
+- **Technical capability:** Source status, document count, default-pack metadata, and reindex
+  triggers make indexing behavior visible and reviewable.
 
 ### Document Intake
 
@@ -169,9 +187,12 @@ What it demonstrates:
 
 What it demonstrates:
 
-- **Product workflow:** Admins can add SOPs, FAQs, manuals, help articles, PM guidance, and inventory procedures without a developer rebuilding the index by hand.
-- **Engineering decision:** Document intake captures source, language, title, and raw text as managed content before retrieval is allowed.
-- **Technical capability:** Saving content can queue asynchronous reindexing so fresh knowledge becomes searchable without blocking the admin UI.
+- **Product workflow:** Admins can add SOPs, FAQs, manuals, help articles, PM guidance, and
+  inventory procedures without a developer rebuilding the index by hand.
+- **Engineering decision:** Document intake captures source, language, title, and raw text as
+  managed content before retrieval is allowed.
+- **Technical capability:** Saving content can queue asynchronous reindexing so fresh knowledge
+  becomes searchable without blocking the admin UI.
 
 ### Document List
 
@@ -179,9 +200,12 @@ What it demonstrates:
 
 What it demonstrates:
 
-- **Product workflow:** Users can review the latest documents attached to a source, including status and content metadata.
-- **Engineering decision:** Knowledge is treated as version-aware operational content rather than disposable chat context.
-- **Technical capability:** Version, character count, language, active state, and pack labels support auditability and safer refresh workflows.
+- **Product workflow:** Users can review the latest documents attached to a source, including
+  status and content metadata.
+- **Engineering decision:** Knowledge is treated as version-aware operational content rather
+  than disposable chat context.
+- **Technical capability:** Version, character count, language, active state, and pack labels
+  support auditability and safer refresh workflows.
 
 ### Ingest Job Monitoring
 
@@ -189,9 +213,12 @@ What it demonstrates:
 
 What it demonstrates:
 
-- **Product workflow:** Admins can understand that document saves create background work with visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
-- **Engineering decision:** Reindexing is modeled as asynchronous job processing instead of a hidden synchronous side effect.
-- **Technical capability:** Status, retry, chunking, embedding generation, and searchable-chunk storage can be monitored and debugged independently.
+- **Product workflow:** Admins can understand that document saves create background work with
+  visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
+- **Engineering decision:** Reindexing is modeled as asynchronous job processing instead of a
+  hidden synchronous side effect.
+- **Technical capability:** Status, retry, chunking, embedding generation, and searchable-chunk
+  storage can be monitored and debugged independently.
 
 The raw ingest-jobs screenshot is intentionally excluded until source IDs, job IDs, user names,
 and timestamps are masked or cropped.
@@ -202,9 +229,12 @@ and timestamps are masked or cropped.
 
 What it demonstrates:
 
-- **Product workflow:** A user can ask a maintenance question and receive an answer grounded in approved knowledge.
-- **Engineering decision:** The assistant returns citations, confidence, and next actions so the answer can be inspected instead of merely trusted.
-- **Technical capability:** Tenant-aware context, evidence-backed answer generation, citation metadata, and query logging connect the KB pipeline to the user-facing AI workflow.
+- **Product workflow:** A user can ask a maintenance question and receive an answer grounded in
+  approved knowledge.
+- **Engineering decision:** The assistant returns citations, confidence, and next actions so the
+  answer can be inspected instead of merely trusted.
+- **Technical capability:** Tenant-aware context, evidence-backed answer generation, citation
+  metadata, and query logging connect the KB pipeline to the user-facing AI workflow.
 
 ## Selected Code Walkthrough
 
@@ -268,11 +298,14 @@ privacy risk.
 This repository is public-safe by design.
 
 - Private product branding is not used.
-- No customer names, tenant IDs, production URLs, emails, credentials, or real operational data are included.
-- All published screenshots are sanitized before inclusion. Additional ingest-job screenshots are
-  excluded until source IDs, job IDs, user names, and timestamps are masked or cropped.
-- Code snippets are shortened and generalized to explain engineering decisions without exposing private implementation details.
-- Query logging is described as metadata-oriented and intentionally avoids raw private document text.
+- No customer names, tenant IDs, production URLs, emails, credentials, or real operational data
+  are included.
+- All published screenshots are sanitized before inclusion. Additional ingest-job screenshots
+  are excluded until source IDs, job IDs, user names, and timestamps are masked or cropped.
+- Code snippets are shortened and generalized to explain engineering decisions without exposing
+  private implementation details.
+- Query logging is described as metadata-oriented and intentionally avoids raw private document
+  text.
 
 ## What This Project Demonstrates
 
