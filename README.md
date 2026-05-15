@@ -6,6 +6,8 @@ The goal is not to build a generic chatbot. The goal is to help maintenance team
 
 For a more formal write-up, see [PAPER.md](PAPER.md).
 
+![Tenant-aware CMMS knowledge base architecture](assets/kb-hero-architecture.svg)
+
 ## Project Snapshot
 
 **Project type:** Technical portfolio case study  
@@ -48,8 +50,6 @@ I built a public-safe showcase of a knowledge-base workflow that includes both p
 
 ## High-Level Architecture
 
-![Hero architecture showing knowledge sources, controlled KB pipeline, CMMS AI assistant, and security boundary](assets/kb-hero-architecture.png)
-
 The architecture is split into three visible zones:
 
 - **Knowledge Sources:** SOPs, FAQs, manuals, help articles, PM rules, and inventory rules.
@@ -66,7 +66,7 @@ The reindex job runs in the background. It reads active documents for the source
 
 When a user asks a question, the system applies tenant and role filters, retrieves evidence using both full-text and vector search, fuses the results, and asks the AI layer to answer only from retrieved context. The response includes citations, confidence, and next actions.
 
-![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.png)
+![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.svg)
 
 ## Data Flow
 
@@ -88,7 +88,7 @@ flowchart LR
     M --> N[Query Log]
 ```
 
-![Hybrid retrieval from user question to cited AI answer](assets/hybrid-retrieval.png)
+![Hybrid retrieval from user question to cited AI answer](assets/hybrid-retrieval.svg)
 
 This flow creates two feedback loops:
 
@@ -119,7 +119,7 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 - Logs are useful for quality review, but raw private documents should not be copied into logs.
 - AI should assist decisions, not silently change work orders, inventory, or maintenance policy.
 
-![Security and privacy boundary diagram](assets/security-boundary.png)
+![Security and privacy boundary diagram](assets/security-boundary.svg)
 
 ## Example Use Cases
 
@@ -134,47 +134,55 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 
 ### Knowledge Source Management
 
-![Knowledge Base source and document intake](screenshots/knowledge-base-intake.jpg)
-
-This screenshot shows the source-management entry point. From an engineering perspective, it proves the workflow is admin-controlled and source-based. Knowledge enters through named sources rather than an unstructured chat prompt.
-
-Recommended annotation: point to source name, source type, refresh defaults, and add source controls.
-
 ![Knowledge Base source list](screenshots/source-list.jpg)
 
-The source list shows the operational state of registered knowledge sources: active status, document counts, system-default pack labels, timestamps, and reindex actions. From a product perspective, this makes the indexing system inspectable rather than invisible.
+What it demonstrates:
 
-Recommended annotation: point to active status, document count, system-default pack, updated timestamp, and reindex action.
+- **Product workflow:** Admins can inspect registered knowledge sources, active state, document counts, update timestamps, and explicit reindex actions.
+- **Engineering decision:** Knowledge is organized by tenant-scoped sources instead of being pushed directly into an unstructured assistant prompt.
+- **Technical capability:** Source status, document count, default-pack metadata, and reindex triggers make indexing behavior visible and reviewable.
 
 ### Document Intake
 
 ![Knowledge Base source and document intake showing document fields](screenshots/knowledge-base-intake.jpg)
 
-This view also shows document intake: source selection, optional language, document title, and raw text. The product value is clear: maintenance teams can add SOPs, FAQs, or manual text without a developer manually rebuilding the index.
+What it demonstrates:
 
-Recommended annotation: highlight that saving a document queues reindexing automatically.
+- **Product workflow:** Admins can add SOPs, FAQs, manuals, help articles, PM guidance, and inventory procedures without a developer rebuilding the index by hand.
+- **Engineering decision:** Document intake captures source, language, title, and raw text as managed content before retrieval is allowed.
+- **Technical capability:** Saving content can queue asynchronous reindexing so fresh knowledge becomes searchable without blocking the admin UI.
 
 ### Document List
 
 ![Knowledge Base documents list](screenshots/documents-list.jpg)
 
-The document list shows versions, character counts, language, active status, and system-default pack metadata. This demonstrates that the system treats knowledge as managed content with lifecycle state, not as a loose blob of text.
+What it demonstrates:
 
-Recommended annotation: point to version, language, active badge, and system-default pack badge.
+- **Product workflow:** Users can review the latest documents attached to a source, including status and content metadata.
+- **Engineering decision:** Knowledge is treated as version-aware operational content rather than disposable chat context.
+- **Technical capability:** Version, character count, language, active state, and pack labels support auditability and safer refresh workflows.
 
 ### Ingest Job Monitoring
 
-The ingest-jobs screenshot is intentionally not embedded yet because the available image still contains source/job identifiers. The repository includes a note in [screenshots/README.md](screenshots/README.md) explaining how to sanitize it before publishing.
+![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.svg)
 
-Recommended annotation: show `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, retry count, and the fact that the UI can poll while work is active.
+What it demonstrates:
+
+- **Product workflow:** Admins can understand that document saves create background work with visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
+- **Engineering decision:** Reindexing is modeled as asynchronous job processing instead of a hidden synchronous side effect.
+- **Technical capability:** Status, retry, chunking, embedding generation, and searchable-chunk storage can be monitored and debugged independently.
+
+The raw ingest-jobs screenshot is intentionally excluded until source IDs, job IDs, user names, and timestamps are masked or cropped.
 
 ### AI Helper Panel
 
 ![Annotated AI helper mockup](assets/ai-helper-annotated.png)
 
-The assistant view shows the consumption side of the knowledge base: user question, grounded answer, citations, confidence, next actions, and tenant-aware context. This proves the feature is not just an admin document store. It is connected to the user-facing AI workflow.
+What it demonstrates:
 
-Recommended annotation: highlight cited answer, confidence, next actions, and tenant-aware context.
+- **Product workflow:** A user can ask a maintenance question and receive an answer grounded in approved knowledge.
+- **Engineering decision:** The assistant returns citations, confidence, and next actions so the answer can be inspected instead of merely trusted.
+- **Technical capability:** Tenant-aware context, evidence-backed answer generation, citation metadata, and query logging connect the KB pipeline to the user-facing AI workflow.
 
 ## Selected Code Walkthrough
 
@@ -226,7 +234,7 @@ This repository is public-safe by design.
 
 - Private product branding is not used.
 - No customer names, tenant IDs, production URLs, emails, credentials, or real operational data are included.
-- Screenshots are sanitized or intentionally excluded when they contain identifiers.
+- All published screenshots are sanitized before inclusion. Additional ingest-job screenshots are excluded until source IDs, job IDs, user names, and timestamps are masked or cropped.
 - Code snippets are shortened and generalized to explain engineering decisions without exposing private implementation details.
 - Query logging is described as metadata-oriented and intentionally avoids raw private document text.
 
@@ -234,12 +242,16 @@ This repository is public-safe by design.
 
 This project demonstrates practical engineering ability across several layers:
 
-- CMMS domain understanding: SOPs, PM rules, inventory processes, work orders, settings, and maintenance operations.
-- Multi-tenant SaaS design: tenant isolation, role-aware access, tenant-scoped APIs, and protected data boundaries.
-- AI retrieval architecture: chunking, embeddings, hybrid search, evidence selection, citations, and confidence.
-- Background processing: visible ingest jobs, retry state, and post-response work.
-- Product judgment: AI assists with grounded answers and next actions instead of pretending to be an autonomous maintenance authority.
-- Privacy thinking: logs and screenshots are treated as part of the security surface.
+- CMMS domain modeling
+- Multi-tenant SaaS architecture
+- Async background job design
+- Document ingest and reindexing pipeline
+- Chunking and embedding workflow
+- Full-text and vector retrieval
+- Citation-aware AI answer generation
+- Privacy-conscious logging
+- Production-oriented feature design
+- Public-safe technical documentation
 
 ## Why This Is Different from a Basic Chatbot
 
@@ -276,10 +288,10 @@ That difference matters because enterprise maintenance software cannot rely on f
 |  |- data-flow.mmd
 |  `- sequence-flow.mmd
 |- assets/
-|  |- kb-hero-architecture.png
-|  |- ingest-pipeline.png
-|  |- hybrid-retrieval.png
-|  |- security-boundary.png
+|  |- kb-hero-architecture.svg
+|  |- ingest-pipeline.svg
+|  |- hybrid-retrieval.svg
+|  |- security-boundary.svg
 |  |- ai-helper-annotated.png
 |  `- README.md
 |- screenshots/

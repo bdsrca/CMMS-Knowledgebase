@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-label="Security and privacy boundaries for CMMS knowledge base">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .title { font: 700 34px Arial, sans-serif; fill: #0f1f46; }
+      .tenantA { fill: #f8fbff; stroke: #2563eb; stroke-width: 2; rx: 18; }
+      .tenantB { fill: #f7fffd; stroke: #0f766e; stroke-width: 2; rx: 18; }
+      .box { fill: #ffffff; stroke: #c6d6ee; stroke-width: 1.6; rx: 12; }
+      .warn { fill: #fff7f7; stroke: #dc2626; stroke-width: 1.8; rx: 12; }
+      .text { font: 700 18px Arial, sans-serif; fill: #10203f; }
+      .small { font: 600 14px Arial, sans-serif; fill: #40516f; }
+      .red { font: 700 18px Arial, sans-serif; fill: #b91c1c; }
+      .arrow { stroke: #2563eb; stroke-width: 3.5; fill: none; marker-end: url(#arrowhead); }
+      .block { stroke: #dc2626; stroke-width: 3; stroke-dasharray: 8 8; fill: none; marker-end: url(#redhead); marker-start: url(#redhead); }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="redhead" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#dc2626"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1400" height="700"/>
+  <text class="title" x="450" y="60">Security and Privacy Boundaries</text>
+
+  <rect class="tenantA" x="45" y="105" width="410" height="210" rx="18"/>
+  <text class="text" x="85" y="145">Tenant A Knowledge Base</text>
+  <rect class="box" x="85" y="175" width="140" height="95" rx="12"/>
+  <text class="small" x="112" y="210">SOPs</text><text class="small" x="112" y="235">FAQs</text><text class="small" x="112" y="260">Manuals</text>
+  <rect class="box" x="250" y="175" width="165" height="95" rx="12"/>
+  <text class="small" x="276" y="210">Admin-only docs</text><text class="small" x="276" y="235">Policies</text><text class="small" x="276" y="260">Playbooks</text>
+
+  <rect class="tenantB" x="45" y="385" width="410" height="210" rx="18"/>
+  <text class="text" x="85" y="425">Tenant B Knowledge Base</text>
+  <rect class="box" x="85" y="455" width="140" height="95" rx="12"/>
+  <text class="small" x="112" y="490">SOPs</text><text class="small" x="112" y="515">FAQs</text><text class="small" x="112" y="540">Manuals</text>
+  <rect class="box" x="250" y="455" width="165" height="95" rx="12"/>
+  <text class="small" x="276" y="490">Admin-only docs</text><text class="small" x="276" y="515">Policies</text><text class="small" x="276" y="540">Playbooks</text>
+
+  <line class="block" x1="250" y1="330" x2="250" y2="370"/>
+  <text class="red" x="105" y="358">No cross-tenant access</text>
+
+  <rect class="tenantA" x="530" y="105" width="330" height="250" rx="18"/>
+  <text class="text" x="570" y="145">Role-Based Access Layer</text>
+  <rect class="box" x="565" y="175" width="260" height="145" rx="12"/>
+  <text class="small" x="595" y="210">Admin: full access</text>
+  <text class="small" x="595" y="240">Editor: standard access</text>
+  <text class="small" x="595" y="270">Viewer: public content only</text>
+  <text class="small" x="595" y="300">Admin-only docs require Admin</text>
+
+  <rect class="tenantB" x="530" y="405" width="330" height="170" rx="18"/>
+  <text class="text" x="570" y="445">Ask/Search API</text>
+  <rect class="box" x="565" y="475" width="260" height="65" rx="12"/>
+  <text class="small" x="590" y="502">Tenant and role filters apply</text>
+  <text class="small" x="590" y="522">before retrieval</text>
+
+  <line class="arrow" x1="455" y1="210" x2="520" y2="210"/>
+  <line class="arrow" x1="455" y1="490" x2="520" y2="490"/>
+  <line class="arrow" x1="695" y1="355" x2="695" y2="395"/>
+
+  <rect class="tenantA" x="935" y="135" width="380" height="175" rx="18"/>
+  <text class="text" x="975" y="175">Protected Retrieval</text>
+  <rect class="box" x="975" y="205" width="300" height="65" rx="12"/>
+  <text class="small" x="1000" y="232">Only allowed documents pass through</text>
+  <text class="small" x="1000" y="252">based on tenant and role</text>
+
+  <rect class="tenantB" x="935" y="385" width="380" height="185" rx="18"/>
+  <text class="text" x="975" y="425">Privacy-Conscious Query Log</text>
+  <rect class="box" x="975" y="455" width="300" height="80" rx="12"/>
+  <text class="small" x="1000" y="482">Stores route, latency, confidence</text>
+  <text class="small" x="1000" y="504">Stores chunk IDs and citation IDs</text>
+  <text class="small" x="1000" y="526">Does not store raw SOP text</text>
+
+  <line class="arrow" x1="860" y1="490" x2="925" y2="490"/>
+  <line class="arrow" x1="860" y1="230" x2="925" y2="230"/>
+</svg>

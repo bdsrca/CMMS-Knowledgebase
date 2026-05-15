@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="640" viewBox="0 0 1600 640" role="img" aria-label="Asynchronous knowledge ingest pipeline">
+  <defs>
+    <style>
+      .bg { fill: #ffffff; }
+      .title { font: 700 34px Arial, sans-serif; fill: #0f1f46; }
+      .box { fill: #f8fbff; stroke: #9bbcf2; stroke-width: 2; }
+      .box2 { fill: #f7fffd; stroke: #7ccbc3; stroke-width: 2; }
+      .status { fill: #ffffff; stroke: #c8d6ef; stroke-width: 1.5; }
+      .label { font: 700 19px Arial, sans-serif; fill: #10203f; }
+      .small { font: 600 15px Arial, sans-serif; fill: #40516f; }
+      .arrow { stroke: #2563eb; stroke-width: 3.5; fill: none; marker-end: url(#arrowhead); }
+      .bar { fill: #eef6ff; stroke: #b8cdf4; stroke-width: 1.5; }
+    </style>
+    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1600" height="640"/>
+  <text class="title" x="475" y="65">Asynchronous Knowledge Ingest Pipeline</text>
+
+  <g transform="translate(45 130)">
+    <rect class="box" x="0" y="0" width="160" height="112" rx="16"/>
+    <text class="label" x="28" y="48">Admin saves</text>
+    <text class="label" x="38" y="76">document</text>
+  </g>
+  <line class="arrow" x1="210" y1="186" x2="255" y2="186"/>
+
+  <g transform="translate(265 130)">
+    <rect class="box" x="0" y="0" width="200" height="112" rx="16"/>
+    <text class="label" x="30" y="43">Tenant-scoped</text>
+    <text class="label" x="42" y="72">document record</text>
+  </g>
+  <line class="arrow" x1="470" y1="186" x2="515" y2="186"/>
+
+  <g transform="translate(525 130)">
+    <rect class="box" x="0" y="0" width="170" height="112" rx="16"/>
+    <text class="label" x="34" y="48">Ingest job</text>
+    <text class="label" x="53" y="76">queued</text>
+  </g>
+  <line class="arrow" x1="700" y1="186" x2="745" y2="186"/>
+
+  <g transform="translate(755 105)">
+    <rect class="box2" x="0" y="0" width="270" height="162" rx="16"/>
+    <text class="label" x="72" y="38">Job status</text>
+    <rect class="status" x="24" y="58" width="103" height="32" rx="10"/>
+    <text class="small" x="43" y="79">PENDING</text>
+    <rect class="status" x="142" y="58" width="104" height="32" rx="10"/>
+    <text class="small" x="151" y="79">PROCESSING</text>
+    <rect class="status" x="24" y="105" width="103" height="32" rx="10"/>
+    <text class="small" x="33" y="126">COMPLETED</text>
+    <rect class="status" x="142" y="105" width="104" height="32" rx="10"/>
+    <text class="small" x="171" y="126">FAILED</text>
+  </g>
+  <line class="arrow" x1="1030" y1="186" x2="1075" y2="186"/>
+
+  <g transform="translate(1085 130)">
+    <rect class="box" x="0" y="0" width="160" height="112" rx="16"/>
+    <text class="label" x="42" y="48">Text</text>
+    <text class="label" x="32" y="76">chunking</text>
+  </g>
+  <line class="arrow" x1="1250" y1="186" x2="1295" y2="186"/>
+
+  <g transform="translate(1305 130)">
+    <rect class="box" x="0" y="0" width="210" height="112" rx="16"/>
+    <text class="label" x="50" y="48">Embedding</text>
+    <text class="label" x="48" y="76">generation</text>
+  </g>
+
+  <line class="arrow" x1="1410" y1="245" x2="1410" y2="315"/>
+  <line class="arrow" x1="1410" y1="315" x2="1050" y2="315"/>
+
+  <g transform="translate(800 300)">
+    <rect class="box2" x="0" y="0" width="245" height="115" rx="16"/>
+    <text class="label" x="42" y="50">Searchable chunks</text>
+    <text class="small" x="58" y="78">stored with tenant scope</text>
+  </g>
+  <line class="arrow" x1="795" y1="358" x2="645" y2="358"/>
+
+  <g transform="translate(405 300)">
+    <rect class="box2" x="0" y="0" width="235" height="115" rx="16"/>
+    <text class="label" x="38" y="50">Ready for search</text>
+    <text class="small" x="43" y="78">and cited AI answers</text>
+  </g>
+
+  <rect class="bar" x="205" y="505" width="1190" height="72" rx="18"/>
+  <text class="label" x="390" y="550">Tenant scoped</text>
+  <text class="label" x="705" y="550">Admin controlled</text>
+  <text class="label" x="1030" y="550">Visible retry state</text>
+</svg>

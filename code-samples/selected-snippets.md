@@ -2,7 +2,7 @@
 
 These snippets are short, public-safe examples adapted from the implementation. They are intentionally sanitized: tenant IDs, user IDs, production URLs, private source names, credentials, and raw operational documents are not included.
 
-## Snippet 1: Document Save and Reindex Queue
+## Snippet 1: Document Intake Queues Reindex Automatically
 
 ### Problem
 
@@ -11,6 +11,10 @@ Admins need to add or update SOPs, FAQs, manuals, and help content without remem
 ### Decision
 
 Save the document through a tenant-scoped API path, invalidate list caches, and queue a reindex job when `autoReindex` is enabled.
+
+### Impact
+
+The admin workflow stays simple, while the backend keeps indexing work explicit and observable. External IDs support repeat imports and system-default refreshes without creating duplicate documents.
 
 ### Code
 
@@ -59,11 +63,11 @@ if (autoReindex) {
 }
 ```
 
-### Impact
+### Notes
 
-The admin workflow stays simple, while the backend keeps indexing work explicit and observable. External IDs support repeat imports and system-default refreshes without creating duplicate documents.
+The important pattern is not the specific ORM call. It is the coupling of managed document save, versioning, cache invalidation, and explicit reindex scheduling inside one tenant-scoped workflow.
 
-## Snippet 2: Background Job Claiming
+## Snippet 2: Ingest Jobs Are Claimed Before Processing
 
 ### Problem
 
@@ -72,6 +76,10 @@ Reindexing is long-running work. It can fail, be retried, or be triggered while 
 ### Decision
 
 Only claim a job when it belongs to the current tenant and is in a claimable state such as `PENDING` or `FAILED`.
+
+### Impact
+
+The claim step reduces duplicate processing and protects tenant boundaries. It also gives the UI meaningful job states that admins can monitor and retry.
 
 ### Code
 
@@ -97,11 +105,11 @@ export async function claimKbIngestJob(
 }
 ```
 
-### Impact
+### Notes
 
-The claim step reduces duplicate processing and protects tenant boundaries. It also gives the UI meaningful job states that admins can monitor and retry.
+The state transition happens before chunking or embedding begins. That makes retries observable and prevents a worker from processing a job it does not own.
 
-## Snippet 3: Chunking and Embedding
+## Snippet 3: Reindex Rebuilds Chunks and Embeddings
 
 ### Problem
 
@@ -110,6 +118,10 @@ Long maintenance documents cannot be embedded or retrieved as one large text blo
 ### Decision
 
 Rebuild chunks from the current document text, use overlap between chunks, and generate embeddings in batches.
+
+### Impact
+
+The searchable state stays aligned with the latest source document. Batching keeps embedding calls predictable, and overlap improves retrieval quality for multi-step procedures.
 
 ### Code
 
@@ -143,11 +155,11 @@ for (const [index, chunk] of chunks.entries()) {
 }
 ```
 
-### Impact
+### Notes
 
-The searchable state stays aligned with the latest source document. Batching keeps embedding calls predictable, and overlap improves retrieval quality for multi-step procedures.
+The old chunks are removed before replacement chunks are written. That keeps retrieval from mixing stale and current document versions.
 
-## Snippet 4: Hybrid Retrieval
+## Snippet 4: Hybrid Retrieval Combines Full-Text and Vector Search
 
 ### Problem
 
@@ -156,6 +168,10 @@ Maintenance users do not always ask questions using the same words that appear i
 ### Decision
 
 Run full-text search and vector search in parallel, then combine results with rank fusion before sending evidence to the answer layer.
+
+### Impact
+
+The assistant can find exact operational terms and semantically related guidance. Running both branches in parallel keeps retrieval responsive.
 
 ### Code
 
@@ -189,11 +205,11 @@ export async function retrieveKbHits(input: {
 }
 ```
 
-### Impact
+### Notes
 
-The assistant can find exact operational terms and semantically related guidance. Running both branches in parallel keeps retrieval responsive.
+Full-text search is useful for exact asset names, status labels, and CMMS terms. Vector search helps when a user phrases the question differently from the approved document.
 
-## Snippet 5: Query Logging Without Raw SOP Text
+## Snippet 5: Query Logs Avoid Raw Chunk Text
 
 ### Problem
 
@@ -202,6 +218,10 @@ The team needs observability for answer quality, latency, confidence, and citati
 ### Decision
 
 Store query metadata, filter context, timing, retrieved chunk IDs, and citation IDs. Do not store raw retrieved chunk content in the query log.
+
+### Impact
+
+The system can review answer quality and identify missing content without duplicating private maintenance documents into analytics logs.
 
 ### Code
 
@@ -233,6 +253,6 @@ await db.kbQueryLog.create({
 });
 ```
 
-### Impact
+### Notes
 
-The system can review answer quality and identify missing content without duplicating private maintenance documents into analytics logs.
+The query text and metadata can still help diagnose poor answers. The privacy boundary is that retrieved SOP/manual content is referenced by ID instead of copied into logs.
