@@ -1,15 +1,17 @@
 # Screenshots
 
-No raw screenshots are committed in this public showcase yet. Screenshots should be reviewed for private identifiers, tenant names, source IDs, timestamps, and any customer-specific content before upload.
+This folder contains sanitized screenshots used by the GitHub showcase.
 
-## Recommended Screenshots To Add
+## Published Screenshots
 
-1. `knowledge-base-sources.png` - KB Sources card with source name, source type, add source, refresh, and refresh defaults controls.
-2. `document-intake.png` - Document Intake form with source, language, title, and raw text fields.
-3. `source-list.png` - Source List showing active sources, system-default badge, document counts, and reindex buttons.
-4. `documents-list.png` - Documents list showing FAQ/SOP titles, versions, language, status, and updated timestamps.
-5. `ingest-jobs.png` - Ingest Jobs list showing processing and completed states.
-6. `ai-helper-panel.png` - Assistant panel showing mode selection and page-aware question input.
+- `knowledge-base-intake.jpg` - KB source creation and document intake controls.
+- `source-list.jpg` - Source list with active status, document counts, system-default badges, and reindex actions.
+- `documents-list.jpg` - Documents list with FAQ/SOP titles, versions, language, and status.
+- `ai-helper-panel.jpg` - AI helper panel with mode selection and page-aware question input.
+
+## Not Yet Published
+
+- `ingest-jobs-needs-sanitization.jpg` - Useful ingest-job screenshot, but it still shows source/job IDs. Mask or crop those IDs before embedding it in the public README.
 
 ## Sanitization Checklist
 

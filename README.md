@@ -160,16 +160,33 @@ See [code-samples/selected-snippets.md](code-samples/selected-snippets.md) for s
 
 ## Screenshots / Visuals
 
-The original feature includes admin screens for:
+The showcase includes sanitized UI references for the core knowledge-base workflow.
 
-- KB source creation and refresh controls.
-- Document intake with source, language, title, and raw text fields.
-- Source list with document counts, system-default badges, and reindex actions.
-- Document list with versions, character counts, language, and status.
-- Ingest job list with processing/completed states and retry status.
-- AI helper panel with mode selection and page-aware questions.
+### Knowledge Base Source and Document Intake
 
-This repository does not include raw product screenshots because screenshots should be reviewed and sanitized before public release. See [screenshots/README.md](screenshots/README.md) for the recommended screenshot set.
+![Knowledge Base source and document intake](screenshots/knowledge-base-intake.jpg)
+
+This screen shows the admin entry point: source registration, refresh controls, document title, language, raw SOP/manual text, and automatic reindex behavior.
+
+### Source List
+
+![Knowledge Base source list](screenshots/source-list.jpg)
+
+The source list makes source health visible through active status, document counts, system-default badges, pack versions, updated timestamps, and reindex actions.
+
+### Documents
+
+![Knowledge Base documents list](screenshots/documents-list.jpg)
+
+The document list exposes the content that will be indexed: FAQ/SOP titles, versions, character counts, language, source pack, and status.
+
+### AI Helper Panel
+
+![Knowledge Base AI helper panel](screenshots/ai-helper-panel.jpg)
+
+The assistant panel shows how the indexed knowledge is consumed: users can ask page-aware questions and choose whether to use both operational context and KB context, or knowledge only.
+
+An ingest-jobs screenshot exists locally but is not embedded yet because it contains source/job IDs that should be masked before public release. See [screenshots/README.md](screenshots/README.md).
 
 ## What This Demonstrates
 
