@@ -1,49 +1,64 @@
-# Design Decisions
+# Configuration Notes
 
-## Decision 1: Treat Knowledge as Tenant-Scoped Data
+This document summarizes the main configuration and implementation choices used by the
+knowledge-base workflow.
 
-The system stores tenant ID on sources, documents, chunks, jobs, and query logs. This is the right default for a CMMS because maintenance procedures, equipment names, policies, and settings are often tenant-specific.
+## Tenant-Scoped Data
 
-Risk reduced: cross-tenant data leakage and irrelevant answers.
+Sources, documents, chunks, jobs, and query logs all carry tenant context.
 
-## Decision 2: Keep Admin Writes Behind API Routes
+That is the safe default for a CMMS because maintenance procedures, equipment names, policies,
+and settings are often tenant-specific.
 
-Source creation, document creation, system-default refresh, and reindexing are handled by API routes with access checks. The UI does not write directly to persistence.
+## API-Controlled Admin Writes
 
-Risk reduced: accidental bypass of tenant access, role checks, request IDs, validation, and error handling.
+Source creation, document creation, system-default refresh, and reindexing run through API
+routes with access checks.
 
-## Decision 3: Queue Reindexing as a Job
+The UI does not write directly to persistence. This keeps tenant access, role checks, request
+IDs, validation, and error handling in one controlled path.
 
-Embedding work can be slow, provider-dependent, and failure-prone. A job model makes the work observable and retryable.
+## Reindex Jobs
 
-Risk reduced: slow admin requests, hidden failures, and unclear ingest state.
+Embedding work can be slow, provider-dependent, and failure-prone.
 
-## Decision 4: Rebuild Chunks from Raw Text
+The job model makes ingest work visible and retryable. Admin screens can show states such as
+`PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` instead of hiding indexing behind a save
+button.
 
-Reindexing deletes existing chunks for a document and rebuilds from the current raw text. This keeps the searchable state aligned with the source document.
+## Chunk Rebuilds
 
-Risk reduced: stale chunks, duplicate chunks, and confusing old answers after a document update.
+Reindexing deletes existing chunks for a document and rebuilds from the current raw text.
 
-## Decision 5: Use Hybrid Retrieval
+This keeps searchable state aligned with the source document and avoids stale chunks after a
+document update.
 
-Full-text search and vector search solve different problems. The system runs both and fuses results.
+## Hybrid Retrieval
 
-Risk reduced: missed matches caused by either exact-word mismatch or embedding-only ambiguity.
+Full-text search and vector search solve different matching problems.
 
-## Decision 6: Require Citations and Confidence
+Full-text search handles exact CMMS terms, labels, and asset names. Vector search helps when a
+user phrases the question differently from the approved document. Rank fusion combines both
+result sets before evidence is sent to the answer layer.
 
-The answer model includes citations and confidence rather than returning only prose. This gives users a way to inspect why the assistant answered the way it did.
+## Citations and Confidence
 
-Risk reduced: over-trust in AI answers and unsupported operational advice.
+Answers include citations and confidence instead of returning only prose.
 
-## Decision 7: Log Metadata, Not Raw Chunk Text
+This gives users a way to inspect the source material behind an answer before acting on
+operational guidance.
 
-The query log stores identifiers and metrics instead of copying retrieved chunk content into the log table.
+## Metadata-Oriented Query Logs
 
-Risk reduced: privacy footprint, storage duplication, and accidental exposure through analytics.
+The query log stores identifiers, timing, confidence, filters, and citation metadata.
 
-## Decision 8: Provide Deterministic Next Actions
+Raw retrieved chunk text is not copied into the log table. This keeps logs useful for review
+without creating another store of private SOP or manual content.
 
-The assistant can suggest actions such as opening work orders, inventory, PM, equipment, or KB settings based on route and query context.
+## Deterministic Next Actions
 
-Risk reduced: generic answers that do not help users move to the next operational step.
+The assistant can suggest actions such as opening work orders, inventory, PM, equipment, or KB
+settings based on route and query context.
+
+Those actions keep answers connected to the operational workflow instead of leaving users with a
+generic text response.

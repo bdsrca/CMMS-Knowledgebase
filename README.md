@@ -1,9 +1,9 @@
 # Tenant-Aware CMMS Knowledge Base with Cited AI Answers
 
-This project is a public-safe technical showcase of a CMMS knowledge-base feature designed to
-support controlled AI-assisted answers inside an enterprise maintenance management system.
+This project is a public-safe documentation case study for a CMMS knowledge-base feature that
+supports controlled AI-assisted answers inside an enterprise maintenance management system.
 
-The goal is not to build a generic chatbot. The goal is to help maintenance teams turn approved
+The goal is not to build a generic chatbot. It helps maintenance teams turn approved
 operational knowledge - SOPs, FAQs, manuals, help articles, preventive maintenance rules, and
 inventory procedures - into reliable, cited answers that respect tenant boundaries, role
 permissions, and operational context.
@@ -32,7 +32,7 @@ Core capabilities:
 - Query logging for observability and quality review
 - Privacy-conscious design that avoids storing raw private content in logs
 
-## Why This Matters
+## Background and Use Cases
 
 Maintenance teams make decisions with real operational consequences. A work order may affect
 equipment uptime, safety, parts availability, technician time, and compliance. The knowledge
@@ -43,14 +43,14 @@ A basic chatbot can produce a fluent answer. That is not enough for a CMMS. User
 where the answer came from, whether the answer applies to their tenant and role, and what action
 they should take next.
 
-This feature treats the knowledge base as an enterprise system component, not as a prompt
-wrapper. It manages source content, indexes documents, retrieves evidence, generates cited
-answers, and logs quality signals without copying private SOP text into observability logs.
+The knowledge base behaves as an enterprise system component, not as a prompt wrapper. It
+manages source content, indexes documents, retrieves evidence, generates cited answers, and logs
+quality signals without copying private SOP text into observability logs.
 
-## What I Built
+## Feature Overview
 
-I built a public-safe showcase of a knowledge-base workflow that includes both product behavior
-and backend architecture:
+The knowledge-base workflow includes both admin-facing content management and retrieval
+architecture:
 
 - An admin-facing Knowledge Base page for source management and document intake.
 - Source records for SOPs, manuals, FAQs, help articles, PM rules, and inventory guidance.
@@ -123,7 +123,7 @@ This flow creates two feedback loops:
 Those quality signals can later guide content review, reindexing, and self-learning
 improvements.
 
-## Technical Highlights
+## Implementation Notes
 
 - **Tenant-aware boundaries:** Sources, documents, chunks, jobs, and query logs are
   tenant-scoped so knowledge from one organization cannot leak into another.
@@ -142,7 +142,7 @@ improvements.
 - **Failure visibility:** Job status and retry count make ingest failures observable instead of
   hiding them behind the UI.
 
-## Engineering Constraints
+## Operating Constraints
 
 This feature was designed around enterprise constraints that matter in CMMS software:
 
@@ -172,53 +172,29 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 
 ![Knowledge Base source list][source-list]
 
-What it demonstrates:
-
-- **Product workflow:** Admins can inspect registered knowledge sources, active state, document
-  counts, update timestamps, and explicit reindex actions.
-- **Engineering decision:** Knowledge is organized by tenant-scoped sources instead of being
-  pushed directly into an unstructured assistant prompt.
-- **Technical capability:** Source status, document count, default-pack metadata, and reindex
-  triggers make indexing behavior visible and reviewable.
+The source list shows active status, document counts, update timestamps, default-pack labels,
+and reindex actions for tenant-scoped knowledge sources.
 
 ### Document Intake
 
 ![Knowledge Base source and document intake showing document fields][knowledge-base-intake]
 
-What it demonstrates:
-
-- **Product workflow:** Admins can add SOPs, FAQs, manuals, help articles, PM guidance, and
-  inventory procedures without a developer rebuilding the index by hand.
-- **Engineering decision:** Document intake captures source, language, title, and raw text as
-  managed content before retrieval is allowed.
-- **Technical capability:** Saving content can queue asynchronous reindexing so fresh knowledge
-  becomes searchable without blocking the admin UI.
+The intake screen captures source, language, title, and raw text so approved documents can enter
+the knowledge base before retrieval or reindexing.
 
 ### Document List
 
 ![Knowledge Base documents list][documents-list]
 
-What it demonstrates:
-
-- **Product workflow:** Users can review the latest documents attached to a source, including
-  status and content metadata.
-- **Engineering decision:** Knowledge is treated as version-aware operational content rather
-  than disposable chat context.
-- **Technical capability:** Version, character count, language, active state, and pack labels
-  support auditability and safer refresh workflows.
+The document list shows version, character count, language, active state, and pack metadata for
+managed knowledge-base content.
 
 ### Ingest Job Monitoring
 
 ![Asynchronous ingest pipeline from document save to searchable chunks][ingest-pipeline]
 
-What it demonstrates:
-
-- **Product workflow:** Admins can understand that document saves create background work with
-  visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
-- **Engineering decision:** Reindexing is modeled as asynchronous job processing instead of a
-  hidden synchronous side effect.
-- **Technical capability:** Status, retry, chunking, embedding generation, and searchable-chunk
-  storage can be monitored and debugged independently.
+The ingest pipeline shows how document saves become background jobs, chunks, embeddings, and
+searchable records without blocking the admin screen.
 
 The raw ingest-jobs screenshot is intentionally excluded until source IDs, job IDs, user names,
 and timestamps are masked or cropped.
@@ -227,71 +203,38 @@ and timestamps are masked or cropped.
 
 ![Annotated AI helper mockup][ai-helper-annotated]
 
-What it demonstrates:
+The assistant mockup shows a grounded answer with citations, confidence, next actions, and
+tenant-aware context.
 
-- **Product workflow:** A user can ask a maintenance question and receive an answer grounded in
-  approved knowledge.
-- **Engineering decision:** The assistant returns citations, confidence, and next actions so the
-  answer can be inspected instead of merely trusted.
-- **Technical capability:** Tenant-aware context, evidence-backed answer generation, citation
-  metadata, and query logging connect the KB pipeline to the user-facing AI workflow.
-
-## Selected Code Walkthrough
+## Code Examples
 
 The full snippets are in [code-samples/selected-snippets.md](code-samples/selected-snippets.md).
-This section summarizes the engineering decisions in a portfolio-friendly format.
+They use sanitized TypeScript examples for the main knowledge-base behaviors.
 
 ### Document Save and Reindex Queue
 
-**Problem:** Admins need to add or update SOPs without manually triggering a separate indexing
-script.
-
-**Decision:** Save the document through a tenant-scoped API route, invalidate relevant caches,
-and queue a reindex job when `autoReindex` is enabled.
-
-**Impact:** The UI stays simple, documents remain versioned, and fresh knowledge becomes
-searchable without manual backend intervention.
+Document save stores tenant-scoped content, invalidates relevant lists, and can queue reindexing
+when `autoReindex` is enabled.
 
 ### Background Job Claiming
 
-**Problem:** Reindexing can be slow, retried, or triggered more than once.
-
-**Decision:** Claim jobs only when they belong to the current tenant and are in a claimable
-state such as `PENDING` or `FAILED`.
-
-**Impact:** The system avoids duplicate work, protects tenant boundaries, and gives admins
-visible job status.
+Job claiming moves a tenant-scoped ingest job into `PROCESSING` only when it is in a claimable
+state.
 
 ### Chunking and Embedding
 
-**Problem:** Long SOPs and manuals cannot be searched or embedded as one large text blob.
-
-**Decision:** Rebuild document chunks from source text, use overlap to preserve context, and
-generate embeddings in batches.
-
-**Impact:** Retrieval quality improves, embedding calls are more predictable, and stale chunks
-are removed during reindexing.
+Reindexing rebuilds chunks from the latest document text, keeps overlap at chunk boundaries, and
+generates embeddings in batches.
 
 ### Hybrid Retrieval
 
-**Problem:** Maintenance users ask questions using exact terms, abbreviations, and informal
-phrasing.
-
-**Decision:** Run full-text and vector retrieval in parallel, then combine results with rank
+Hybrid retrieval runs full-text and vector search together, then combines the results with rank
 fusion.
-
-**Impact:** The assistant can find both exact operational matches and semantically similar
-guidance.
 
 ### Query Logging
 
-**Problem:** The team needs quality signals without creating a second store of private SOP text.
-
-**Decision:** Log route, filters, latency, confidence, retrieved chunk IDs, and citation IDs,
-but not raw retrieved content.
-
-**Impact:** The system supports observability and future content improvement while reducing
-privacy risk.
+Query logging records metadata, retrieved chunk IDs, and citation IDs without copying raw
+retrieved content into logs.
 
 ## Security and Privacy Notes
 
@@ -307,9 +250,10 @@ This repository is public-safe by design.
 - Query logging is described as metadata-oriented and intentionally avoids raw private document
   text.
 
-## What This Project Demonstrates
+## Documentation Scope
 
-This project demonstrates practical engineering ability across several layers:
+This repository documents the system behavior and implementation boundaries behind a CMMS
+knowledge-base feature:
 
 - CMMS domain modeling
 - Multi-tenant SaaS architecture
@@ -322,7 +266,7 @@ This project demonstrates practical engineering ability across several layers:
 - Production-oriented feature design
 - Public-safe technical documentation
 
-## Why This Is Different from a Basic Chatbot
+## Scope Compared With a Basic Chatbot
 
 A basic chatbot usually accepts a prompt and returns text. This feature does more.
 
@@ -330,8 +274,8 @@ It manages approved source content. It indexes documents. It applies tenant and 
 before retrieval. It combines lexical and semantic search. It requires citations. It returns
 confidence and next actions. It logs quality signals without storing raw SOP text.
 
-That difference matters because enterprise maintenance software cannot rely on fluent answers
-alone. It needs accountable answers that users can trace back to approved operational knowledge.
+Enterprise maintenance software cannot rely on fluent answers alone. It needs accountable
+answers that users can trace back to approved operational knowledge.
 
 ## Future Improvements
 

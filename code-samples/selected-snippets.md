@@ -1,27 +1,15 @@
-# Selected Code Walkthrough
+# Code Examples
 
-These snippets are short, public-safe examples adapted from the implementation. They are
-intentionally sanitized: tenant IDs, user IDs, production URLs, private source names,
-credentials, and raw operational documents are not included.
+These snippets are short, public-safe examples of the knowledge-base behavior described in the
+README. They are intentionally sanitized: tenant IDs, user IDs, production URLs, private source
+names, credentials, and raw operational documents are not included.
 
 ## Snippet 1: Document Intake Queues Reindex Automatically
 
-### Problem
+### What it does
 
-Admins need to add or update SOPs, FAQs, manuals, and help content without remembering a
-separate indexing command. If document save and indexing are disconnected, the assistant can
-answer from stale content.
-
-### Decision
-
-Save the document through a tenant-scoped API path, invalidate list caches, and queue a reindex
-job when `autoReindex` is enabled.
-
-### Impact
-
-The admin workflow stays simple, while the backend keeps indexing work explicit and observable.
-External IDs support repeat imports and system-default refreshes without creating duplicate
-documents.
+Saves tenant-scoped documents and queues reindexing when `autoReindex` is enabled. External IDs
+support repeat imports and system-default refreshes without creating duplicate documents.
 
 ### Code
 
@@ -70,7 +58,7 @@ if (autoReindex) {
 }
 ```
 
-### Notes
+### Behavior
 
 The important pattern is not the specific ORM call. It is the coupling of managed document save,
 versioning, cache invalidation, and explicit reindex scheduling inside one tenant-scoped
@@ -78,20 +66,10 @@ workflow.
 
 ## Snippet 2: Ingest Jobs Are Claimed Before Processing
 
-### Problem
+### What it does
 
-Reindexing is long-running work. It can fail, be retried, or be triggered while another job is
-active. The system needs a safe way to claim work before processing.
-
-### Decision
-
-Only claim a job when it belongs to the current tenant and is in a claimable state such as
-`PENDING` or `FAILED`.
-
-### Impact
-
-The claim step reduces duplicate processing and protects tenant boundaries. It also gives the UI
-meaningful job states that admins can monitor and retry.
+Claims a tenant-scoped ingest job before processing begins. Only jobs in `PENDING` or `FAILED`
+state can move into `PROCESSING`.
 
 ### Code
 
@@ -117,27 +95,17 @@ export async function claimKbIngestJob(
 }
 ```
 
-### Notes
+### Behavior
 
 The state transition happens before chunking or embedding begins. That makes retries observable
 and prevents a worker from processing a job it does not own.
 
 ## Snippet 3: Reindex Rebuilds Chunks and Embeddings
 
-### Problem
+### What it does
 
-Long maintenance documents cannot be embedded or retrieved as one large text blob. SOPs need to
-be split into searchable units while preserving context around boundaries.
-
-### Decision
-
-Rebuild chunks from the current document text, use overlap between chunks, and generate
-embeddings in batches.
-
-### Impact
-
-The searchable state stays aligned with the latest source document. Batching keeps embedding
-calls predictable, and overlap improves retrieval quality for multi-step procedures.
+Rebuilds searchable chunks from the latest document text and generates embeddings in batches.
+Overlap keeps nearby procedure steps available across chunk boundaries.
 
 ### Code
 
@@ -171,27 +139,17 @@ for (const [index, chunk] of chunks.entries()) {
 }
 ```
 
-### Notes
+### Behavior
 
 The old chunks are removed before replacement chunks are written. That keeps retrieval from
 mixing stale and current document versions.
 
 ## Snippet 4: Hybrid Retrieval Combines Full-Text and Vector Search
 
-### Problem
+### What it does
 
-Maintenance users do not always ask questions using the same words that appear in the SOP. Some
-questions need exact matching, while others need semantic matching.
-
-### Decision
-
-Run full-text search and vector search in parallel, then combine results with rank fusion before
-sending evidence to the answer layer.
-
-### Impact
-
-The assistant can find exact operational terms and semantically related guidance. Running both
-branches in parallel keeps retrieval responsive.
+Runs full-text search and vector search in parallel, then combines results with reciprocal rank
+fusion before evidence is sent to the answer layer.
 
 ### Code
 
@@ -225,27 +183,17 @@ export async function retrieveKbHits(input: {
 }
 ```
 
-### Notes
+### Behavior
 
 Full-text search is useful for exact asset names, status labels, and CMMS terms. Vector search
 helps when a user phrases the question differently from the approved document.
 
 ## Snippet 5: Query Logs Avoid Raw Chunk Text
 
-### Problem
+### What it does
 
-The team needs observability for answer quality, latency, confidence, and citation behavior, but
-logs should not become another storage location for private SOP text.
-
-### Decision
-
-Store query metadata, filter context, timing, retrieved chunk IDs, and citation IDs. Do not
-store raw retrieved chunk content in the query log.
-
-### Impact
-
-The system can review answer quality and identify missing content without duplicating private
-maintenance documents into analytics logs.
+Stores query metadata, filter context, timing, retrieved chunk IDs, and citation IDs. Raw
+retrieved chunk content is not copied into the query log.
 
 ### Code
 
@@ -277,7 +225,7 @@ await db.kbQueryLog.create({
 });
 ```
 
-### Notes
+### Behavior
 
 The query text and metadata can still help diagnose poor answers. The privacy boundary is that
 retrieved SOP/manual content is referenced by ID instead of copied into logs.
