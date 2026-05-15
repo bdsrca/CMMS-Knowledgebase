@@ -13,6 +13,8 @@ This folder contains sanitized screenshots used by the GitHub showcase.
 
 - `ingest-jobs-needs-sanitization.jpg` - Useful ingest-job screenshot, but it still shows source/job IDs. Mask or crop those IDs before embedding it in the public README.
 
+The README currently uses a sanitized ingest pipeline diagram in `assets/ingest-pipeline.png` instead of this raw job screenshot.
+
 ## Sanitization Checklist
 
 - Replace tenant names with `tenant_demo`.

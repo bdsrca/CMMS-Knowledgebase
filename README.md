@@ -1,222 +1,263 @@
-# Next-Generation Knowledge Base Implementation in a CMMS System
+# Tenant-Aware CMMS Knowledge Base with Cited AI Answers
 
-## Overview
+This project is a public-safe technical showcase of a CMMS knowledge-base feature designed to support controlled AI-assisted answers inside an enterprise maintenance management system.
 
-This repository is a public-safe technical showcase of a knowledge-base feature built for a modern CMMS platform. It explains how maintenance SOPs, FAQs, manuals, help articles, and operational guidance can be ingested into a tenant-aware knowledge base, reindexed in the background, and used by an AI assistant without exposing private system data.
+The goal is not to build a generic chatbot. The goal is to help maintenance teams turn approved operational knowledge - SOPs, FAQs, manuals, help articles, preventive maintenance rules, and inventory procedures - into reliable, cited answers that respect tenant boundaries, role permissions, and operational context.
 
-The feature solves a common maintenance problem: teams often have the right knowledge, but it is scattered across SOP documents, onboarding guides, inventory rules, PM playbooks, settings notes, and tribal experience. A technician or admin should not have to know where every document lives before asking a useful question. The system turns those documents into searchable, cited, role-aware answers.
+For a more formal write-up, see [PAPER.md](PAPER.md).
 
-This showcase focuses on the engineering design behind the feature:
+## Project Snapshot
 
-- KB source management for SOPs, manuals, FAQs, and system-default help packs.
-- Document intake with versioning and automatic reindex queuing.
-- Asynchronous ingest jobs that chunk documents, create embeddings, and persist searchable chunks.
+**Project type:** Technical portfolio case study  
+**Domain:** CMMS, enterprise maintenance, multi-tenant SaaS, AI knowledge retrieval  
+**Primary users:** Maintenance admins, planners, supervisors, technicians, and support teams  
+**Core idea:** Convert approved maintenance knowledge into tenant-aware, searchable, cited AI answers.
+
+Core capabilities:
+
+- Tenant-aware knowledge source management
+- Document intake for SOPs, FAQs, manuals, and help content
+- Asynchronous reindexing jobs with visible job status
+- Text chunking and embedding generation
+- Hybrid retrieval using full-text and vector search
+- AI answers grounded in retrieved evidence
+- Citation support for answer traceability
+- Query logging for observability and quality review
+- Privacy-conscious design that avoids storing raw private content in logs
+
+## Why This Matters
+
+Maintenance teams make decisions with real operational consequences. A work order may affect equipment uptime, safety, parts availability, technician time, and compliance. The knowledge needed to make those decisions is often scattered across SOPs, training notes, manuals, admin settings, PM rules, and inventory procedures.
+
+A basic chatbot can produce a fluent answer. That is not enough for a CMMS. Users need to know where the answer came from, whether the answer applies to their tenant and role, and what action they should take next.
+
+This feature treats the knowledge base as an enterprise system component, not as a prompt wrapper. It manages source content, indexes documents, retrieves evidence, generates cited answers, and logs quality signals without copying private SOP text into observability logs.
+
+## What I Built
+
+I built a public-safe showcase of a knowledge-base workflow that includes both product behavior and backend architecture:
+
+- An admin-facing Knowledge Base page for source management and document intake.
+- Source records for SOPs, manuals, FAQs, help articles, PM rules, and inventory guidance.
+- Document records with title, language, raw text, metadata, versioning, and source ownership.
+- Reindex jobs that move through visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`.
+- A chunking and embedding pipeline that turns documents into searchable knowledge chunks.
 - Hybrid retrieval that combines full-text search and vector search.
-- AI-assisted answers with citations, confidence, next actions, and non-blocking query logs.
+- An AI answer path that returns answer text, citations, confidence, next actions, and retrieved evidence.
+- A query-log path that supports review and improvement without storing raw private document content.
 
-For a more formal written version, see [PAPER.md](PAPER.md).
+## High-Level Architecture
 
-The implementation is intentionally described without private branding, private tenant names, production URLs, real customer data, or proprietary business details.
+![Hero architecture showing knowledge sources, controlled KB pipeline, CMMS AI assistant, and security boundary](assets/kb-hero-architecture.png)
 
-## Problem
+The architecture is split into three visible zones:
 
-Maintenance teams do not only need work orders. They need context.
+- **Knowledge Sources:** SOPs, FAQs, manuals, help articles, PM rules, and inventory rules.
+- **Controlled KB Pipeline:** source management, document intake, asynchronous ingest jobs, chunking, embeddings, and hybrid retrieval.
+- **CMMS AI Assistant:** cited answers, confidence score, next actions, and query logging.
 
-A planner may ask why a PM-generated work order behaves differently from a manually created work order. A storeroom lead may need the escalation rule for waiting parts. A new admin may need to know who can change settings. A technician may need the right SOP for a compressor, generator, chiller, or inventory process.
+The bottom layer is the real differentiator: tenant isolation, role access, and no private data in logs. That boundary keeps the feature aligned with enterprise SaaS expectations instead of behaving like a generic AI demo.
 
-In many CMMS environments, that knowledge lives in disconnected places:
+## End-to-End Workflow
 
-- PDFs and SOP documents.
-- Internal training notes.
-- Help center articles.
-- Admin-only configuration guidance.
-- Maintenance playbooks owned by different departments.
-- AI assistant prompts that need trusted grounding.
+An admin starts by creating a source, such as `Maintenance SOPs` or `System Default Help`. They paste or upload document content, assign language and metadata, and save the document. Saving can queue a reindex job automatically.
 
-The business problem is not just search. The real problem is trust. If an AI helper answers from stale, uncited, or unauthorized knowledge, it can create confusion and operational risk. A CMMS knowledge base needs to answer questions, show its evidence, respect tenant boundaries, and keep indexing work observable.
+The reindex job runs in the background. It reads active documents for the source, splits text into overlapping chunks, generates embeddings in batches, and stores searchable chunks. Once complete, the assistant can retrieve those chunks when users ask questions.
 
-## Solution
+When a user asks a question, the system applies tenant and role filters, retrieves evidence using both full-text and vector search, fuses the results, and asks the AI layer to answer only from retrieved context. The response includes citations, confidence, and next actions.
 
-The feature introduces a controlled knowledge-base pipeline.
-
-Admins register sources, paste or upload documents, and trigger reindexing. The system saves documents under the correct tenant, creates an ingest job, chunks the text, embeds chunks, and writes both text-searchable and vector-searchable records. The assistant retrieves relevant chunks, fuses lexical and semantic matches, asks the model to answer only from retrieved context, and returns citations plus next actions.
-
-The design is maintainable because each concern has a clear boundary:
-
-- The UI manages source setup, document intake, job status, and document browsing.
-- API routes enforce tenant access and admin permissions.
-- The ingest runner handles background reindexing and failure state.
-- The retrieval layer owns full-text search, vector search, filtering, and rank fusion.
-- The ask layer owns grounded answer generation, citations, confidence, and fallback behavior.
-- The query log captures observability data without storing raw chunk text.
-
-## Visual Overview
-
-```mermaid
-flowchart TD
-    Admin[Admin user] --> UI[Knowledge Base settings UI]
-    UI --> SourcesAPI[Sources API]
-    UI --> DocsAPI[Documents API]
-    UI --> JobsAPI[Jobs and worker APIs]
-
-    SourcesAPI --> DB[(Postgres)]
-    DocsAPI --> DB
-    DocsAPI --> JobStore[Ingest job store]
-    JobsAPI --> Runner[Ingest runner]
-    JobStore --> DB
-    Runner --> Chunker[Text chunker]
-    Runner --> Embedder[Embedding provider]
-    Chunker --> DB
-    Embedder --> DB
-
-    User[Technician or admin] --> AskAPI[KB ask/search API]
-    AskAPI --> Retrieval[Hybrid retrieval]
-    Retrieval --> DB
-    Retrieval --> Chat[AI answer generation]
-    Chat --> Answer[Cited answer + confidence + next actions]
-    AskAPI --> QueryLog[Non-blocking query log]
-    QueryLog --> DB
-```
-
-## Key Features
-
-- Tenant-aware source registration keeps each organization's manuals, SOPs, and help articles scoped to the right tenant rather than mixing knowledge across customers.
-- Document intake supports plain text, metadata, language, external IDs, and version increments so reindexing can be repeated safely as content changes.
-- Reindex requests return quickly with a job ID, while chunking and embedding run asynchronously so the admin UI stays responsive.
-- The ingest job lifecycle records `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` states, which makes background work visible and retryable.
-- Hybrid retrieval combines full-text search and vector search, reducing the chance that useful SOP content is missed because a user phrased a question differently from the source document.
-- The answer layer requires citations in `[doc:n]` form and returns confidence, citations, hits, and next actions instead of a vague AI paragraph.
-- Query logging stores route, filters, latency, confidence, retrieved chunk IDs, and citation IDs without storing raw chunk content in the log path.
-
-## Architecture
-
-The feature has five main layers.
-
-**UI Layer**
-
-The Knowledge Base settings page lets admins create sources, add documents, refresh defaults, reindex sources, inspect documents, and monitor ingest jobs. The UI polls only while a job is active, which keeps the page fresh without constant background traffic.
-
-**API Layer**
-
-Tenant-scoped API routes handle sources, documents, reindex requests, jobs, worker execution, search, and ask workflows. Admin-only operations such as source and document management are protected behind role checks. User-facing ask/search routes derive filters from tenant access and UI context.
-
-**Business Logic Layer**
-
-The core logic is split into small modules:
-
-- `kb-admin-store` lists sources and documents with short-lived caches.
-- `kb-ingest-job-store` creates, claims, completes, fails, and lists jobs.
-- `kb-ingest-runner` rebuilds chunks and embeddings for active documents.
-- `kb/chunking` creates overlapping chunks.
-- `kb/retrieval` runs full-text and vector search in parallel, then fuses results.
-- `kb/ask` builds grounded AI answers with citations and deterministic next actions.
-
-**Persistence Layer**
-
-The data model uses separate tables for sources, documents, chunks, ingest jobs, and query logs. Chunks store text, metadata, token estimates, and optional `vector(1536)` embeddings. Indexes are scoped by tenant and common query dimensions.
-
-**Background Processing**
-
-Reindexing is job-based. Creating a document can queue a job automatically. A worker endpoint can execute pending jobs, and server-side post-response work can run ingestion after returning the API response.
+![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.png)
 
 ## Data Flow
 
 ```mermaid
 flowchart LR
-    A[Source created] --> B[Document saved]
-    B --> C[Ingest job queued]
-    C --> D[Job claimed]
-    D --> E[Document text chunked]
-    E --> F[Embeddings created in batches]
-    F --> G[Chunks persisted with metadata]
-    G --> H[User asks a question]
-    H --> I[Full-text + vector retrieval]
-    I --> J[Rank fusion]
-    J --> K[AI answer with citations]
-    K --> L[Query log written after response]
+    A[Admin Creates Knowledge Source] --> B[Document Saved]
+    B --> C[Reindex Job Queued]
+    C --> D[Background Worker Claims Job]
+    D --> E[Text Extraction and Normalization]
+    E --> F[Chunking]
+    F --> G[Embedding Generation]
+    G --> H[Searchable Knowledge Chunks]
+
+    I[User Asks Question] --> J[Hybrid Retrieval]
+    H --> J
+    J --> K[Evidence Selection]
+    K --> L[Cited AI Answer]
+    L --> M[Answer + Citations + Confidence]
+    M --> N[Query Log]
 ```
 
-Data moves through two loops. The ingest loop turns documents into searchable chunks. The answer loop retrieves those chunks, builds grounded context, and returns a response that the UI can render safely.
+![Hybrid retrieval from user question to cited AI answer](assets/hybrid-retrieval.png)
+
+This flow creates two feedback loops:
+
+- The ingest loop turns approved documents into searchable chunks.
+- The answer loop turns user questions into cited answers and quality signals.
+
+Those quality signals can later guide content review, reindexing, and self-learning improvements.
 
 ## Technical Highlights
 
-- **Controlled API boundary:** UI code never writes directly to the database. All source, document, job, and ask workflows pass through tenant-aware routes.
-- **Migration-aware schema:** Knowledge data is separated into source, document, chunk, job, and query-log tables, which supports future changes without forcing one overloaded table to do everything.
-- **Idempotent document updates:** Documents with external IDs use upsert semantics and version increments, making system-default help packs and recurring imports safer to refresh.
-- **Asynchronous ingest:** Reindexing has an explicit job lifecycle, so expensive embedding work does not block the admin interaction.
-- **Hybrid retrieval:** Full-text search handles exact operational language, while vector search handles semantic matches. Reciprocal rank fusion merges both.
-- **Safe observability:** Query logging stores metrics and identifiers, not raw retrieved text, reducing the privacy footprint of analytics.
-- **AI fallback behavior:** If chat runtime is unavailable, retrieval still returns evidence and a lower-confidence response instead of failing the full workflow.
+- **Tenant-aware boundaries:** Sources, documents, chunks, jobs, and query logs are tenant-scoped so knowledge from one organization cannot leak into another.
+- **Role-aware retrieval:** User role and UI context are applied before retrieval, which helps keep admin-only documents protected.
+- **Asynchronous ingest:** Document saves can return quickly while chunking and embeddings run through visible background jobs.
+- **Hybrid search:** Full-text search catches exact maintenance terms, while vector search catches semantic matches. Rank fusion combines both.
+- **Cited answer model:** The assistant returns citations and confidence so users can inspect the evidence behind an answer.
+- **Privacy-conscious logging:** Query logs store metadata, timing, confidence, retrieved chunk IDs, and citation IDs, not raw SOP text.
+- **Operational next actions:** Answers can include actions such as opening work orders, inventory, PM, equipment, or settings pages.
+- **Failure visibility:** Job status and retry count make ingest failures observable instead of hiding them behind the UI.
 
-## Selected Code Walkthrough
+## Engineering Constraints
 
-See [code-samples/selected-snippets.md](code-samples/selected-snippets.md) for sanitized snippets covering:
+This feature was designed around enterprise constraints that matter in CMMS software:
 
-- Admin document intake and automatic reindexing.
-- Ingest job claiming and completion.
-- Chunking and embedding writes.
-- Hybrid retrieval and rank fusion.
-- Query logging without raw chunk text.
+- Maintenance guidance can be safety-sensitive, so answers must be grounded and traceable.
+- Tenant data must remain isolated across organizations.
+- Role permissions must apply before retrieval, not after an answer is generated.
+- Reindexing may be slow or provider-dependent, so it needs background job state.
+- Logs are useful for quality review, but raw private documents should not be copied into logs.
+- AI should assist decisions, not silently change work orders, inventory, or maintenance policy.
 
-## Screenshots / Visuals
+![Security and privacy boundary diagram](assets/security-boundary.png)
 
-The showcase includes sanitized UI references for the core knowledge-base workflow.
+## Example Use Cases
 
-### Knowledge Base Source and Document Intake
+- A technician asks how to start using the AI helper and receives a cited onboarding answer.
+- A planner asks why PM-generated work orders behave differently from manual work orders.
+- A storeroom lead asks why inventory did not change after approval and receives an answer grounded in issue rules.
+- An admin asks who can change settings and receives role-aware guidance.
+- A supervisor asks when to use waiting-parts status and gets next actions linked to the relevant process.
+- A maintenance lead reviews low-confidence queries to identify missing or stale SOP content.
+
+## Screenshots
+
+### Knowledge Source Management
 
 ![Knowledge Base source and document intake](screenshots/knowledge-base-intake.jpg)
 
-This screen shows the admin entry point: source registration, refresh controls, document title, language, raw SOP/manual text, and automatic reindex behavior.
+This screenshot shows the source-management entry point. From an engineering perspective, it proves the workflow is admin-controlled and source-based. Knowledge enters through named sources rather than an unstructured chat prompt.
 
-### Source List
+Recommended annotation: point to source name, source type, refresh defaults, and add source controls.
 
 ![Knowledge Base source list](screenshots/source-list.jpg)
 
-The source list makes source health visible through active status, document counts, system-default badges, pack versions, updated timestamps, and reindex actions.
+The source list shows the operational state of registered knowledge sources: active status, document counts, system-default pack labels, timestamps, and reindex actions. From a product perspective, this makes the indexing system inspectable rather than invisible.
 
-### Documents
+Recommended annotation: point to active status, document count, system-default pack, updated timestamp, and reindex action.
+
+### Document Intake
+
+![Knowledge Base source and document intake showing document fields](screenshots/knowledge-base-intake.jpg)
+
+This view also shows document intake: source selection, optional language, document title, and raw text. The product value is clear: maintenance teams can add SOPs, FAQs, or manual text without a developer manually rebuilding the index.
+
+Recommended annotation: highlight that saving a document queues reindexing automatically.
+
+### Document List
 
 ![Knowledge Base documents list](screenshots/documents-list.jpg)
 
-The document list exposes the content that will be indexed: FAQ/SOP titles, versions, character counts, language, source pack, and status.
+The document list shows versions, character counts, language, active status, and system-default pack metadata. This demonstrates that the system treats knowledge as managed content with lifecycle state, not as a loose blob of text.
+
+Recommended annotation: point to version, language, active badge, and system-default pack badge.
+
+### Ingest Job Monitoring
+
+The ingest-jobs screenshot is intentionally not embedded yet because the available image still contains source/job identifiers. The repository includes a note in [screenshots/README.md](screenshots/README.md) explaining how to sanitize it before publishing.
+
+Recommended annotation: show `PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`, retry count, and the fact that the UI can poll while work is active.
 
 ### AI Helper Panel
 
-![Knowledge Base AI helper panel](screenshots/ai-helper-panel.jpg)
+![Annotated AI helper mockup](assets/ai-helper-annotated.png)
 
-The assistant panel shows how the indexed knowledge is consumed: users can ask page-aware questions and choose whether to use both operational context and KB context, or knowledge only.
+The assistant view shows the consumption side of the knowledge base: user question, grounded answer, citations, confidence, next actions, and tenant-aware context. This proves the feature is not just an admin document store. It is connected to the user-facing AI workflow.
 
-An ingest-jobs screenshot exists locally but is not embedded yet because it contains source/job IDs that should be masked before public release. See [screenshots/README.md](screenshots/README.md).
+Recommended annotation: highlight cited answer, confidence, next actions, and tenant-aware context.
 
-## What This Demonstrates
+## Selected Code Walkthrough
 
-This showcase demonstrates the ability to design a production-oriented knowledge system rather than a thin AI wrapper. It shows how to connect UI workflows, tenant-aware APIs, background jobs, database design, retrieval, AI grounding, and observability into one coherent feature.
+The full snippets are in [code-samples/selected-snippets.md](code-samples/selected-snippets.md). This section summarizes the engineering decisions in a portfolio-friendly format.
 
-From an engineering portfolio perspective, it proves:
+### Document Save and Reindex Queue
 
-- System design across frontend, backend, data, and AI layers.
-- Practical handling of long-running work through job state.
-- Awareness of tenant isolation and role-based access.
-- Retrieval design that balances exact search and semantic search.
-- Product judgment around citations, confidence, and human trust.
+**Problem:** Admins need to add or update SOPs without manually triggering a separate indexing script.
 
-## Lessons Learned
+**Decision:** Save the document through a tenant-scoped API route, invalidate relevant caches, and queue a reindex job when `autoReindex` is enabled.
 
-Knowledge-base features are deceptively deep. The UI may look like source lists and text boxes, but the hard part is making every answer traceable and every ingest step observable.
+**Impact:** The UI stays simple, documents remain versioned, and fresh knowledge becomes searchable without manual backend intervention.
 
-The biggest design tradeoff is speed versus correctness. Reindexing immediately after every document save keeps answers fresh, but embedding work can be slow and expensive. A job queue gives the UI fast feedback while preserving a reliable processing path.
+### Background Job Claiming
 
-Another tradeoff is answer flexibility versus safety. A general AI assistant can sound helpful even when evidence is weak. This design constrains the assistant to retrieved context, citations, and confidence so users can judge whether the answer is trustworthy.
+**Problem:** Reindexing can be slow, retried, or triggered more than once.
+
+**Decision:** Claim jobs only when they belong to the current tenant and are in a claimable state such as `PENDING` or `FAILED`.
+
+**Impact:** The system avoids duplicate work, protects tenant boundaries, and gives admins visible job status.
+
+### Chunking and Embedding
+
+**Problem:** Long SOPs and manuals cannot be searched or embedded as one large text blob.
+
+**Decision:** Rebuild document chunks from source text, use overlap to preserve context, and generate embeddings in batches.
+
+**Impact:** Retrieval quality improves, embedding calls are more predictable, and stale chunks are removed during reindexing.
+
+### Hybrid Retrieval
+
+**Problem:** Maintenance users ask questions using exact terms, abbreviations, and informal phrasing.
+
+**Decision:** Run full-text and vector retrieval in parallel, then combine results with rank fusion.
+
+**Impact:** The assistant can find both exact operational matches and semantically similar guidance.
+
+### Query Logging
+
+**Problem:** The team needs quality signals without creating a second store of private SOP text.
+
+**Decision:** Log route, filters, latency, confidence, retrieved chunk IDs, and citation IDs, but not raw retrieved content.
+
+**Impact:** The system supports observability and future content improvement while reducing privacy risk.
+
+## Security and Privacy Notes
+
+This repository is public-safe by design.
+
+- Private product branding is not used.
+- No customer names, tenant IDs, production URLs, emails, credentials, or real operational data are included.
+- Screenshots are sanitized or intentionally excluded when they contain identifiers.
+- Code snippets are shortened and generalized to explain engineering decisions without exposing private implementation details.
+- Query logging is described as metadata-oriented and intentionally avoids raw private document text.
+
+## What This Project Demonstrates
+
+This project demonstrates practical engineering ability across several layers:
+
+- CMMS domain understanding: SOPs, PM rules, inventory processes, work orders, settings, and maintenance operations.
+- Multi-tenant SaaS design: tenant isolation, role-aware access, tenant-scoped APIs, and protected data boundaries.
+- AI retrieval architecture: chunking, embeddings, hybrid search, evidence selection, citations, and confidence.
+- Background processing: visible ingest jobs, retry state, and post-response work.
+- Product judgment: AI assists with grounded answers and next actions instead of pretending to be an autonomous maintenance authority.
+- Privacy thinking: logs and screenshots are treated as part of the security surface.
+
+## Why This Is Different from a Basic Chatbot
+
+A basic chatbot usually accepts a prompt and returns text. This feature does more.
+
+It manages approved source content. It indexes documents. It applies tenant and role filters before retrieval. It combines lexical and semantic search. It requires citations. It returns confidence and next actions. It logs quality signals without storing raw SOP text.
+
+That difference matters because enterprise maintenance software cannot rely on fluent answers alone. It needs accountable answers that users can trace back to approved operational knowledge.
 
 ## Future Improvements
 
-- Add object-storage backed file uploads for PDFs and manuals.
-- Add document diffing so unchanged chunks do not need re-embedding.
-- Add scheduled stale-source review reminders.
-- Add admin analytics for unanswered questions and low-confidence answers.
-- Add richer role visibility rules for department-specific SOPs.
-- Add evaluation dashboards from golden question sets.
-- Move ingest execution to a dedicated durable queue when traffic grows.
+- Add secure PDF and document upload parsing.
+- Add chunk-level diffing so unchanged content does not need re-embedding.
+- Move ingest execution to a durable queue for higher-volume deployments.
+- Add admin dashboards for low-confidence questions and missing knowledge topics.
+- Add document owner, review cadence, stale-content warnings, and approval state.
+- Add more granular role visibility for admin-only or department-specific SOPs.
+- Add golden-question evaluation reports to measure retrieval and answer quality over time.
 
 ## Repository Structure
 
@@ -234,27 +275,32 @@ Another tradeoff is answer flexibility versus safety. A general AI assistant can
 |  |- architecture.mmd
 |  |- data-flow.mmd
 |  `- sequence-flow.mmd
+|- assets/
+|  |- kb-hero-architecture.png
+|  |- ingest-pipeline.png
+|  |- hybrid-retrieval.png
+|  |- security-boundary.png
+|  |- ai-helper-annotated.png
+|  `- README.md
+|- screenshots/
+|  |- knowledge-base-intake.jpg
+|  |- source-list.jpg
+|  |- documents-list.jpg
+|  |- ai-helper-panel.jpg
+|  `- README.md
 |- code-samples/
 |  |- README.md
 |  `- selected-snippets.md
-|- screenshots/
-|  `- README.md
-|- assets/
-|  `- README.md
 |- CHANGELOG.md
 |- LICENSE
 `- .gitignore
 ```
 
-## Security and Privacy Notes
+## Summary
 
-This showcase is sanitized for public viewing.
+This showcase presents a CMMS knowledge-base feature as an enterprise AI retrieval system. It demonstrates how approved maintenance knowledge can be ingested, indexed, retrieved, cited, and logged in a way that respects tenant boundaries and operational trust.
 
-- Private product branding was removed.
-- Tenant IDs, user IDs, source IDs, and production URLs were replaced with generic names.
-- No API keys, tokens, connection strings, credentials, or customer data are included.
-- Code snippets are shortened and sanitized to show design patterns rather than private implementation details.
-- Screenshots are described but not included until they can be reviewed for public release.
+The result is not a chatbot pasted onto a CMMS. It is a controlled knowledge workflow that makes AI answers more useful, safer to review, and easier to improve over time.
 
 ## License
 

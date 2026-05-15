@@ -1,10 +1,16 @@
-# Selected Code Snippets
+# Selected Code Walkthrough
 
-## Snippet 1: Document Intake Queues Reindex Automatically
+These snippets are short, public-safe examples adapted from the implementation. They are intentionally sanitized: tenant IDs, user IDs, production URLs, private source names, credentials, and raw operational documents are not included.
 
-### Why this matters
+## Snippet 1: Document Save and Reindex Queue
 
-Saving a knowledge document should not require an admin to remember a second indexing step. The API writes the document, invalidates cached list data, then queues an ingest job when `autoReindex` is enabled.
+### Problem
+
+Admins need to add or update SOPs, FAQs, manuals, and help content without remembering a separate indexing command. If document save and indexing are disconnected, the assistant can answer from stale content.
+
+### Decision
+
+Save the document through a tenant-scoped API path, invalidate list caches, and queue a reindex job when `autoReindex` is enabled.
 
 ### Code
 
@@ -21,11 +27,19 @@ if (!docs.length) {
 for (const doc of docs) {
   const saved = doc.externalId
     ? await db.kbDocument.upsert({
-        where: { tenantId_sourceId_externalId: { tenantId, sourceId, externalId: doc.externalId } },
+        where: {
+          tenantId_sourceId_externalId: {
+            tenantId,
+            sourceId,
+            externalId: doc.externalId,
+          },
+        },
         create: { tenantId, sourceId, ...doc, version: 1 },
         update: { ...doc, version: { increment: 1 } },
       })
-    : await db.kbDocument.create({ data: { tenantId, sourceId, ...doc, version: 1 } });
+    : await db.kbDocument.create({
+        data: { tenantId, sourceId, ...doc, version: 1 },
+      });
 
   savedDocuments.push(saved);
 }
@@ -34,27 +48,38 @@ invalidateKbSourcesCache(tenantId);
 invalidateKbDocumentsCache(tenantId);
 
 if (autoReindex) {
-  const jobId = await createKbIngestJob({ tenantId, sourceId, createdByUserId, mode: "full" });
+  const jobId = await createKbIngestJob({
+    tenantId,
+    sourceId,
+    createdByUserId,
+    mode: "full",
+  });
+
   queuePostResponseWork(() => runKbIngestJob({ tenantId, jobId }));
 }
 ```
 
-### Design Notes
+### Impact
 
-This approach keeps the admin workflow simple while preserving a reliable background-processing boundary. External IDs support repeat imports and system-default refreshes without creating duplicate documents.
+The admin workflow stays simple, while the backend keeps indexing work explicit and observable. External IDs support repeat imports and system-default refreshes without creating duplicate documents.
 
-Risk reduced: stale search results, duplicate KB records, and slow document-save requests.
+## Snippet 2: Background Job Claiming
 
-## Snippet 2: Ingest Jobs Are Claimed Before Processing
+### Problem
 
-### Why this matters
+Reindexing is long-running work. It can fail, be retried, or be triggered while another job is active. The system needs a safe way to claim work before processing.
 
-Background work must be observable and safe to retry. A job should only run when it belongs to the current tenant and is in a claimable state.
+### Decision
+
+Only claim a job when it belongs to the current tenant and is in a claimable state such as `PENDING` or `FAILED`.
 
 ### Code
 
 ```ts
-export async function claimKbIngestJob(jobId: string, tenantId: string): Promise<boolean> {
+export async function claimKbIngestJob(
+  jobId: string,
+  tenantId: string
+): Promise<boolean> {
   const rows = await db.query`
     UPDATE "KbIngestJob"
     SET status = 'PROCESSING',
@@ -72,17 +97,19 @@ export async function claimKbIngestJob(jobId: string, tenantId: string): Promise
 }
 ```
 
-### Design Notes
+### Impact
 
-The claim step acts like a small concurrency guard. It prevents a completed job from being processed again and prevents work from crossing tenant boundaries.
+The claim step reduces duplicate processing and protects tenant boundaries. It also gives the UI meaningful job states that admins can monitor and retry.
 
-Risk reduced: duplicate ingest runs, confusing job state, and cross-tenant processing mistakes.
+## Snippet 3: Chunking and Embedding
 
-## Snippet 3: Reindex Rebuilds Chunks and Embeddings
+### Problem
 
-### Why this matters
+Long maintenance documents cannot be embedded or retrieved as one large text blob. SOPs need to be split into searchable units while preserving context around boundaries.
 
-The searchable representation of a document should match the latest raw text. Rebuilding chunks during reindex keeps retrieval aligned with the current document version.
+### Decision
+
+Rebuild chunks from the current document text, use overlap between chunks, and generate embeddings in batches.
 
 ### Code
 
@@ -116,17 +143,19 @@ for (const [index, chunk] of chunks.entries()) {
 }
 ```
 
-### Design Notes
+### Impact
 
-The delete-and-rebuild model is easy to reason about for a full reindex. Batching embeddings improves throughput while keeping provider calls bounded.
+The searchable state stays aligned with the latest source document. Batching keeps embedding calls predictable, and overlap improves retrieval quality for multi-step procedures.
 
-Risk reduced: stale chunks, inconsistent embeddings, and excessive embedding requests.
+## Snippet 4: Hybrid Retrieval
 
-## Snippet 4: Hybrid Retrieval Combines Full-Text and Vector Search
+### Problem
 
-### Why this matters
+Maintenance users do not always ask questions using the same words that appear in the SOP. Some questions need exact matching, while others need semantic matching.
 
-Maintenance questions mix exact terms and fuzzy descriptions. A user might ask for "waiting parts escalation" or "why did inventory not change after approval?" Hybrid retrieval improves recall across both styles.
+### Decision
+
+Run full-text search and vector search in parallel, then combine results with rank fusion before sending evidence to the answer layer.
 
 ### Code
 
@@ -142,25 +171,37 @@ export async function retrieveKbHits(input: {
   if (!query) return [];
 
   const [ftsHits, vectorHits] = await Promise.all([
-    searchByFullText({ tenantId: input.tenantId, query, topK, filters: input.filters }),
-    searchByVector({ tenantId: input.tenantId, query, topK, filters: input.filters }),
+    searchByFullText({
+      tenantId: input.tenantId,
+      query,
+      topK,
+      filters: input.filters,
+    }),
+    searchByVector({
+      tenantId: input.tenantId,
+      query,
+      topK,
+      filters: input.filters,
+    }),
   ]);
 
   return reciprocalRankFusion(ftsHits, vectorHits, topK);
 }
 ```
 
-### Design Notes
+### Impact
 
-Running both branches in parallel keeps latency lower than sequential search. Rank fusion avoids hard-coding one search method as always superior.
+The assistant can find exact operational terms and semantically related guidance. Running both branches in parallel keeps retrieval responsive.
 
-Risk reduced: missed answers caused by wording mismatch or embedding-only ambiguity.
+## Snippet 5: Query Logging Without Raw SOP Text
 
-## Snippet 5: Query Logs Avoid Raw Chunk Text
+### Problem
 
-### Why this matters
+The team needs observability for answer quality, latency, confidence, and citation behavior, but logs should not become another storage location for private SOP text.
 
-Observability is useful, but logs should not become another place where private SOP text is copied. The query log stores metrics and identifiers, not raw chunk contents.
+### Decision
+
+Store query metadata, filter context, timing, retrieved chunk IDs, and citation IDs. Do not store raw retrieved chunk content in the query log.
 
 ### Code
 
@@ -192,8 +233,6 @@ await db.kbQueryLog.create({
 });
 ```
 
-### Design Notes
+### Impact
 
-This gives the team enough information to analyze quality and latency without duplicating sensitive document text.
-
-Risk reduced: privacy exposure, log bloat, and accidental leakage through analytics.
+The system can review answer quality and identify missing content without duplicating private maintenance documents into analytics logs.
