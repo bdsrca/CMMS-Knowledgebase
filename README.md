@@ -10,7 +10,7 @@ permissions, and operational context.
 
 For a more formal write-up, see [PAPER.md](PAPER.md).
 
-![Tenant-aware CMMS knowledge base architecture](assets/kb-hero-architecture.svg)
+![Tenant-aware CMMS knowledge base architecture][kb-hero-architecture]
 
 ## Project Snapshot
 
@@ -91,7 +91,7 @@ When a user asks a question, the system applies tenant and role filters, retriev
 using both full-text and vector search, fuses the results, and asks the AI layer to answer only
 from retrieved context. The response includes citations, confidence, and next actions.
 
-![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.svg)
+![Asynchronous ingest pipeline from document save to searchable chunks][ingest-pipeline]
 
 ## Data Flow
 
@@ -113,7 +113,7 @@ flowchart LR
     M --> N[Query Log]
 ```
 
-![Hybrid retrieval from user question to cited AI answer](assets/hybrid-retrieval.svg)
+![Hybrid retrieval from user question to cited AI answer][hybrid-retrieval]
 
 This flow creates two feedback loops:
 
@@ -153,7 +153,7 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 - Logs are useful for quality review, but raw private documents should not be copied into logs.
 - AI should assist decisions, not silently change work orders, inventory, or maintenance policy.
 
-![Security and privacy boundary diagram](assets/security-boundary.svg)
+![Security and privacy boundary diagram][security-boundary]
 
 ## Example Use Cases
 
@@ -170,7 +170,7 @@ This feature was designed around enterprise constraints that matter in CMMS soft
 
 ### Knowledge Source Management
 
-![Knowledge Base source list](screenshots/source-list.jpg)
+![Knowledge Base source list][source-list]
 
 What it demonstrates:
 
@@ -183,7 +183,7 @@ What it demonstrates:
 
 ### Document Intake
 
-![Knowledge Base source and document intake showing document fields](screenshots/knowledge-base-intake.jpg)
+![Knowledge Base source and document intake showing document fields][knowledge-base-intake]
 
 What it demonstrates:
 
@@ -196,7 +196,7 @@ What it demonstrates:
 
 ### Document List
 
-![Knowledge Base documents list](screenshots/documents-list.jpg)
+![Knowledge Base documents list][documents-list]
 
 What it demonstrates:
 
@@ -209,7 +209,7 @@ What it demonstrates:
 
 ### Ingest Job Monitoring
 
-![Asynchronous ingest pipeline from document save to searchable chunks](assets/ingest-pipeline.svg)
+![Asynchronous ingest pipeline from document save to searchable chunks][ingest-pipeline]
 
 What it demonstrates:
 
@@ -225,7 +225,7 @@ and timestamps are masked or cropped.
 
 ### AI Helper Panel
 
-![Annotated AI helper mockup](assets/ai-helper-annotated.png)
+![Annotated AI helper mockup][ai-helper-annotated]
 
 What it demonstrates:
 
@@ -392,3 +392,12 @@ AI answers more useful, safer to review, and easier to improve over time.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+[kb-hero-architecture]: assets/kb-hero-architecture.svg
+[ingest-pipeline]: assets/ingest-pipeline.svg
+[hybrid-retrieval]: assets/hybrid-retrieval.svg
+[security-boundary]: assets/security-boundary.svg
+[source-list]: screenshots/source-list.jpg
+[knowledge-base-intake]: screenshots/knowledge-base-intake.jpg
+[documents-list]: screenshots/documents-list.jpg
+[ai-helper-annotated]: assets/ai-helper-annotated.png
