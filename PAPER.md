@@ -1,133 +1,193 @@
-# A Tenant-Aware Knowledge Base for AI-Assisted CMMS Workflows
+# A Tenant-Aware Knowledge Base for Next-Generation CMMS/EAM
 
 ## Abstract
 
-This paper describes a knowledge-base implementation for a modern CMMS system. The feature lets administrators register knowledge sources, add SOPs and support documents, run asynchronous reindex jobs, and expose the resulting knowledge to search and AI-assisted answers.
+This paper describes a knowledge-base pattern for modern CMMS/EAM software. The system lets administrators register knowledge sources, add approved maintenance documents, run asynchronous indexing jobs, and expose the resulting knowledge to cited AI-assisted answers.
 
-The central design goal is trust. Maintenance teams need answers that are grounded in approved documents, scoped to the right tenant, visible to the right role, and traceable through citations. A generic chatbot cannot provide that on its own. The system therefore separates source management, document ingestion, background indexing, hybrid retrieval, grounded answer generation, and query logging.
+The main design goal is trust. Maintenance teams do not only need fluent answers. They need answers that are grounded in approved content, scoped to the right tenant, visible to the right role, and traceable through citations.
 
-The resulting architecture demonstrates how a CMMS can move from static help content to a self-improving knowledge layer while keeping humans in control of source content and operational decisions.
+The architecture separates source management, document ingestion, background indexing, hybrid retrieval, answer packaging, and query logging. That separation keeps the system practical: each layer can be tested, monitored, and improved without turning the assistant into an uncontrolled automation path.
 
 ## 1. Context
 
-CMMS users ask practical questions:
+CMMS/EAM users ask concrete questions:
 
-- How should I start using the AI helper?
-- Why does export take time?
-- Who can change settings?
 - How do I reindex the knowledge base?
-- When should I use waiting parts?
 - Why did inventory not change after approval?
+- When should I use waiting-parts status?
+- Which SOP applies when a compressor is noisy?
+- Who is allowed to change settings?
+- What does this alarm mean in the current work-order context?
 
-These questions are not only help-center questions. They sit inside daily maintenance operations. The answer may depend on SOPs, role permissions, PM rules, inventory behavior, settings, or current page context.
+These are not casual help-center questions. They sit inside daily maintenance work. A wrong answer can waste technician time, hide a safety step, consume the wrong part, or point a user to stale policy.
 
-The knowledge-base feature addresses this by turning approved maintenance documents into a searchable and answerable knowledge layer.
+The knowledge-base feature turns approved maintenance documents into a controlled answer layer. It is designed for the working reality of CMMS/EAM systems: multiple tenants, role permissions, operational procedures, background jobs, data freshness, and safety-sensitive guidance.
 
 ## 2. Problem
 
-Maintenance knowledge is often scattered across manuals, SOP files, onboarding guides, admin notes, and informal process memory. When users cannot find trusted guidance quickly, they either interrupt another person or make a decision with incomplete context.
+Maintenance knowledge is usually scattered across manuals, SOP files, onboarding notes, PM templates, inventory rules, training decks, admin settings, and the memory of experienced staff.
 
-AI can help, but only if the system controls where answers come from. Without source governance, citations, and tenant isolation, AI answers can become risky. They may sound confident while using stale content, wrong tenant data, or unsupported assumptions.
+When users cannot find trusted guidance quickly, they do one of three things:
 
-The engineering challenge is to make the knowledge base useful without turning it into an uncontrolled automation path.
+1. interrupt another person;
+2. make a decision with incomplete context;
+3. ask an AI assistant that may answer without enough evidence.
 
-## 3. Design
+The third option is attractive but risky. AI is useful only when the system controls where the answer comes from. Without source governance, citations, and tenant isolation, the answer can sound confident while relying on stale documents, wrong-tenant data, or unsupported assumptions.
 
-The system uses five design principles.
+## 3. Design principles
 
-### 3.1 Tenant Isolation
+### 3.1 Tenant isolation
 
-Every source, document, chunk, job, and query log belongs to a tenant. This keeps one organization's maintenance procedures separate from another organization's knowledge.
+Sources, documents, chunks, ingest jobs, and query logs all belong to a tenant. Retrieval applies tenant scope before answer generation. This prevents knowledge from one organization from appearing in another organization's answer.
 
-### 3.2 Admin-Controlled Sources
+### 3.2 Admin-controlled source truth
 
-Admins register sources and manage documents. The source list gives them visibility into source type, status, document count, system-default packs, and updated timestamps.
+Admins create sources and manage documents. The assistant does not invent procedures or silently rewrite SOPs. Source content remains owned by people and approved business processes.
 
-### 3.3 Asynchronous Indexing
+### 3.3 Visible ingest work
 
-Document saves can queue a reindex job. The UI receives a job ID quickly while the backend performs chunking and embedding work in the background.
+Document indexing is asynchronous. Saving a document can queue a job with visible states such as `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED`. This gives admins a way to see whether knowledge is searchable yet.
 
-### 3.4 Hybrid Retrieval
+### 3.4 Hybrid retrieval
 
-The retrieval layer uses both full-text search and vector search. Full-text search catches exact operational terms. Vector search catches semantic matches. Rank fusion combines the two.
+Maintenance language is messy. Users use abbreviations, asset names, status labels, and informal phrases. Full-text search catches exact terms. Semantic search catches similar meaning. Rank fusion combines both results before answer generation.
 
-### 3.5 Grounded Answers
+### 3.5 Cited answers
 
-The answer layer builds context only from retrieved chunks. The output includes answer text, confidence, citations, retrieved hits, and next actions. If evidence is weak or the AI runtime is unavailable, the system uses explicit fallback behavior.
+The assistant returns answer text, confidence, citations, next actions, and retrieved hits. The citation is not decoration. It is the trust mechanism that lets a user inspect the source before acting.
 
-## 4. Implementation
+### 3.6 Privacy-conscious logs
 
-The admin UI has four main panels:
+Logs are useful for improving the system, but they should not become another copy of private documents. The query log stores timing, filters, confidence, retrieved chunk IDs, and citation IDs. It avoids raw retrieved SOP text.
 
-- KB Sources: create sources, refresh the list, and refresh default help content.
-- Document Intake: paste SOP, FAQ, or manual text into a selected source.
-- Source List and Documents: inspect current source and document state.
-- Ingest Jobs: monitor processing, completed, or failed reindex jobs.
+## 4. System model
 
-The backend is organized around clear modules:
+The system is built around a small set of concepts.
 
-- Source and document APIs validate tenant access and admin roles.
-- The job store creates and manages ingest-job state.
-- The ingest runner rebuilds chunks and embeddings.
-- The chunking module splits raw text into overlapping chunks.
-- The retrieval module combines full-text and vector hits.
-- The ask module produces grounded answers with citations.
-- The query-log module records performance and evidence identifiers.
+| Concept | Purpose |
+| --- | --- |
+| `KbSource` | A managed collection such as Maintenance SOPs, System Help, PM Rules, or Inventory Guidance |
+| `KbDocument` | The source text, title, language, metadata, version, status, and review information |
+| `KbChunk` | A searchable slice of a document, optionally with an embedding |
+| `KbIngestJob` | A visible background job that rebuilds chunks and embeddings |
+| `KbQueryLog` | A metadata-oriented record of question, route, filters, latency, confidence, retrieved IDs, and citations |
+| `AnswerPackage` | The user-facing response: answer, confidence, citations, next actions, and evidence |
 
-This separation makes the feature easier to evolve. For example, a future durable queue can replace the current worker path without changing the document API or assistant response model.
+The important separation is between source truth and derived retrieval artifacts. Documents are source truth. Chunks and embeddings are rebuildable artifacts. Query logs are quality signals, not source content.
 
-## 5. Data Model
+## 5. Workflow
 
-The data model separates stable source content from derived searchable content.
+### 5.1 Ingest flow
 
-`KbSource` represents a collection such as Maintenance SOPs, System Default Help, PM guidance, or inventory rules.
+1. An admin creates or selects a source.
+2. The admin saves a document with title, language, visibility, metadata, and raw text.
+3. The document API validates tenant and role access.
+4. A reindex job is created.
+5. A worker claims the job.
+6. Active documents are normalized and split into overlapping chunks.
+7. Embeddings are generated in batches.
+8. Old chunks are replaced by current chunks.
+9. The job is marked completed or failed with stats.
 
-`KbDocument` stores the source document, version, language, metadata, and raw text.
+![Ingest pipeline](assets/ingest-pipeline.svg)
 
-`KbChunk` stores searchable slices of document text, chunk order, metadata, and optional vector embeddings.
+### 5.2 Ask flow
 
-`KbIngestJob` stores reindex state, retry count, errors, timestamps, and stats.
+1. A user asks a question from the current page or helper panel.
+2. The system resolves tenant, role, and UI context.
+3. Retrieval runs keyword and semantic branches.
+4. Rank fusion merges the result lists.
+5. The answer layer builds context only from retrieved chunks.
+6. The assistant returns a structured answer package.
+7. The system maps citations back to source documents.
+8. A query log is written after the response.
 
-`KbQueryLog` stores route, filters, latency, confidence, retrieved chunk IDs, and citation IDs.
+![Hybrid retrieval](assets/hybrid-retrieval.svg)
 
-This model keeps source truth, generated retrieval artifacts, background processing, and observability separate.
+## 6. Real-world maintenance examples
 
-## 6. Why It Matters
+### Example 1: inventory did not change after approval
 
-The feature gives a CMMS three important capabilities.
+A planner approves a work order and expects inventory to decrease. The answer should not guess. It should retrieve the inventory rule and explain that stock changes when a part issue is posted or when a configured consumption rule fires. It should cite the rule and link the user to the work-order parts tab or inventory issue log.
 
-First, it makes help and SOP content operational. Knowledge is no longer just a static document library; it can answer questions inside the workflow.
+### Example 2: noisy compressor
 
-Second, it gives AI a controlled evidence base. The assistant is useful because it retrieves approved content and cites where the answer came from.
+A technician reports abnormal compressor noise. The assistant should retrieve the triage SOP, recent PM guidance, and safety procedure. It should avoid making a shutdown decision on its own. It can recommend checks, show citations, and escalate if safety thresholds or abnormal vibration are mentioned.
 
-Third, it creates a self-improvement loop. Query logs and low-confidence answers reveal which documents are missing, stale, or unclear. Admins can improve the source content and reindex.
+### Example 3: drone inspection defect
 
-## 7. Tradeoffs
+A grid or facility inspection system flags a defect. A knowledge base can map the defect code to repair procedure, risk classification, required parts, and inspection evidence. The AI answer should be grounded in the defect procedure, not only in the image label.
 
-The design intentionally favors trust over maximum automation.
+### Example 4: rail fleet maintenance
 
-Reindex jobs add operational complexity, but they make long-running work visible and retryable.
+Rail assets are safety-critical. A cited answer can help technicians find the right checklist or O&M procedure, but final action should remain under approved workflow and human review.
 
-Hybrid retrieval is more complex than keyword search, but it improves answer quality when users phrase questions differently from SOP text.
+## 7. China manufacturing context
 
-Citations and confidence make answer generation stricter, but they help users decide whether to rely on an answer.
+The phrase `中国智造` is often used to describe the shift from scale manufacturing to intelligent, connected, data-driven manufacturing. The official policy name is `中国制造2025`.
 
-Query logging adds another persistence path, but limiting logs to metrics and IDs reduces privacy risk.
+For CMMS/EAM product design, the important point is practical: intelligent manufacturing creates more connected assets and more operational knowledge. Factories, rail systems, grids, process plants, smart buildings, and industrial internet platforms all produce documents, signals, procedures, inspection outputs, and asset history that maintenance teams need to use safely.
 
-## 8. Future Work
+This repository maps public industrial examples to knowledge-base design needs:
 
-Future improvements should focus on durability, governance, and measurement:
+- Midea Building Technologies shows how equipment manufacturing, service diagnostics, energy use, and smart O&M recommendations can connect.
+- SANY shows the relationship between intelligent factories, heavy equipment, field service, and telematics.
+- State Grid shows how inspection data can become maintenance action.
+- CRRC shows why lifecycle O&M and safety-critical procedures need traceability.
+- Huawei and COSMOPlat show the infrastructure side: connected factories, industrial networks, digital twins, and scenario platforms.
+- Sinopec and Baowu/Baosteel show asset-intensive process and steel environments where reliability, safety, and inspection knowledge matter.
 
-- Add file parsing for PDFs and office documents.
-- Move ingest execution to a durable queue.
-- Add document review cadence and owner metadata.
-- Add stale content alerts.
-- Add low-confidence answer review workflows.
-- Add evaluation dashboards based on golden questions.
-- Add chunk-level diffing to avoid re-embedding unchanged content.
+These examples are used as context only. They do not imply that any named company uses this implementation.
 
-## 9. Conclusion
+![China manufacturing context](assets/china-manufacturing-to-kb-map.svg)
 
-This knowledge-base implementation shows how AI can be added to a CMMS in a practical and controlled way. The strongest idea is not that AI can answer questions. The stronger idea is that a CMMS can make its operational knowledge structured, searchable, cited, tenant-aware, and continuously improvable.
+## 8. Evaluation model
 
-That is the foundation for a safer AI-assisted maintenance platform.
+A knowledge-base assistant should be evaluated like an operational feature, not like a writing demo.
+
+Useful checks include:
+
+| Check | Question |
+| --- | --- |
+| Retrieval coverage | Did the system find the right source documents? |
+| Citation precision | Do the cited chunks support the answer? |
+| Answer restraint | Does the answer avoid unsupported instructions? |
+| Tenant safety | Can cross-tenant content appear? |
+| Role safety | Can a technician see admin-only knowledge? |
+| Freshness | Are stale documents flagged for review? |
+| Latency | Does the workflow feel usable in the UI? |
+| Fallback behavior | Does weak evidence produce a safe fallback instead of a confident guess? |
+
+![Retrieval quality scorecard](assets/retrieval-quality-scorecard.svg)
+
+## 9. Tradeoffs
+
+The design favors trust over maximum automation.
+
+- Reindex jobs add operational complexity, but they make slow work visible and retryable.
+- Hybrid retrieval is more complex than keyword search, but maintenance questions often need both exact terms and semantic matching.
+- Citations and confidence make the response stricter, but they help users decide whether to rely on the answer.
+- Metadata-oriented logs limit analytics detail, but they avoid duplicating private SOP text.
+- Human-owned source truth slows automatic learning, but it prevents the assistant from silently changing operational policy.
+
+## 10. Future work
+
+The next improvements would be:
+
+- secure file parsing for PDF, DOCX, CSV, and HTML sources;
+- chunk-level diffing so unchanged content is not re-embedded;
+- durable queue support for higher-volume indexing;
+- source owner and review cadence enforcement;
+- low-confidence and no-result dashboards;
+- golden-question evaluation runs;
+- multilingual retrieval tuning;
+- role-specific source visibility;
+- feedback buttons for stale, incomplete, or unsafe answers;
+- integration with work-order, equipment, PM, inventory, and audit pages.
+
+## 11. Conclusion
+
+The strongest idea in this project is not that AI can answer questions. The stronger idea is that a CMMS/EAM system can make its operational knowledge structured, searchable, cited, tenant-aware, and continuously improvable.
+
+That is a practical foundation for safer AI-assisted maintenance software.

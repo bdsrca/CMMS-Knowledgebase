@@ -2,36 +2,35 @@
 
 ## Purpose
 
-The Knowledge Base feature turns maintenance knowledge into a controlled retrieval layer for a CMMS. The design goal is not only to answer questions. It is to answer questions with tenant isolation, admin control, observable ingest jobs, and cited evidence.
+The knowledge-base feature turns maintenance knowledge into a controlled retrieval layer for CMMS/EAM.
 
-## Main Components
+The goal is not only to answer questions. The goal is to answer questions with source governance, tenant isolation, role-aware access, cited evidence, visible background work, and quality feedback.
 
-### Knowledge Base Settings UI
+![Architecture](../assets/kb-hero-architecture.svg)
 
-The admin UI owns source setup, document intake, source browsing, document browsing, and job monitoring. It gives administrators a place to refresh system defaults, add manual content, and trigger reindexing without touching backend scripts.
+## Main components
 
-Key behavior:
+### Knowledge Base settings UI
 
-- Loads sources and jobs together.
-- Loads documents when a source is selected.
-- Queues reindexing automatically when a document is saved.
-- Polls jobs only while one is active.
-- Displays status, document count, version, language, and updated timestamps.
+The admin UI owns source setup, document intake, document browsing, source browsing, and job monitoring.
 
-### Source and Document APIs
+Useful UI behaviors:
 
-The source and document APIs sit behind tenant access checks and admin role checks. They prevent the UI from bypassing business rules and keep source/document writes scoped to the current tenant.
+- Load sources and recent jobs together.
+- Load documents when a source is selected.
+- Queue reindexing after document save when configured.
+- Show `PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` job states.
+- Show status, document count, version, language, visibility, and review cadence.
 
-The document API supports two write modes:
+### Source and document APIs
 
-- Create a new document when no external ID is present.
-- Upsert and increment version when an external ID is present.
+Source and document APIs sit behind tenant checks and role checks.
 
-That second mode matters for system-default content and repeat imports, where a stable external ID lets the system update known documents safely.
+The UI does not write directly to persistence. That keeps validation, permissions, request IDs, versioning, and errors in one controlled path.
 
-### Ingest Job Store
+### Ingest job store
 
-The job store provides a small state machine:
+The job store is a small state machine:
 
 ```text
 PENDING -> PROCESSING -> COMPLETED
@@ -39,39 +38,53 @@ PENDING -> PROCESSING -> FAILED
 FAILED  -> PROCESSING -> COMPLETED
 ```
 
-The store uses scoped updates so a job can only be claimed when it belongs to the tenant and is in a claimable state. This reduces duplicate work and makes retry behavior explicit.
+A worker can claim a job only when the tenant matches and the job is in a claimable state.
 
-### Ingest Runner
+### Ingest runner
 
-The runner rebuilds chunks for active documents in a source. It deletes existing chunks for a document, splits raw text into overlapping chunks, embeds the chunk text in batches, and writes chunk rows with metadata and embedding fields.
+The runner rebuilds searchable state from source truth:
 
-This makes reindexing deterministic: the searchable representation of a document is rebuilt from the current raw text.
+1. read active documents;
+2. delete old chunks for the document;
+3. split text into overlapping chunks;
+4. generate embeddings in batches;
+5. write chunk rows with metadata;
+6. mark job completed or failed.
 
-### Retrieval Layer
+### Retrieval layer
 
-The retrieval layer runs two search paths in parallel:
+The retrieval layer runs two branches:
 
-- Full-text search for direct operational language, titles, and exact terms.
-- Vector search for semantic matches across SOP wording variations.
+- full-text search for exact CMMS terms, equipment names, status labels, and procedure names;
+- semantic search for related language and paraphrased user questions.
 
-Results are merged with reciprocal rank fusion. The merged result keeps the top hits while preserving whether a hit came from full-text search, vector search, or both.
+The results are merged with rank fusion.
 
-### Ask Layer
+### Ask layer
 
-The ask layer turns retrieved chunks into a grounded response. It builds a context block, asks the AI runtime for a JSON response, extracts citations, computes confidence, and merges deterministic next actions.
+The ask layer builds a context block from retrieved chunks. The assistant is instructed to answer from that evidence. The response includes answer text, confidence, citations, next actions, and retrieved hits.
 
-If the AI runtime is unavailable, the system still returns retrieved evidence with a lower-confidence fallback instead of failing the workflow.
+### Query log
 
-### Query Log
+The query log stores metadata, not private retrieved document text.
 
-The query log is intentionally narrow. It stores route, filters, latency, confidence, retrieved chunk IDs, and citation IDs. It avoids raw chunk text so observability does not become a second copy of private knowledge content.
+Good log fields:
 
-## Component Diagram
+- tenant ID reference;
+- user role;
+- route or page context;
+- query text;
+- latency;
+- filters;
+- confidence;
+- retrieved chunk IDs;
+- citation IDs;
+- fallback reason.
 
-See [../diagrams/architecture.mmd](../diagrams/architecture.mmd).
+Avoid storing raw SOP chunks in logs.
 
-## Why This Architecture Matters
+## Why this architecture matters
 
-This architecture separates source management, ingest processing, retrieval, answer generation, and observability. That separation reduces risk because each layer can be tested and evolved independently.
+CMMS/EAM knowledge changes over time. Some content is tenant-specific. Some content is role-specific. Some answers are safety-sensitive. Some indexing jobs fail.
 
-It also reflects the operational reality of CMMS software: knowledge changes over time, source content may be tenant-specific, answers need evidence, and background work must be visible to admins.
+Separating source management, ingest, retrieval, answer generation, and observability makes the feature easier to reason about and safer to evolve.

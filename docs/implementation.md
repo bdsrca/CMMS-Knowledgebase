@@ -1,51 +1,110 @@
-# Implementation
+# Implementation Notes
 
-## Source Management
+## Source management
 
-Sources represent logical collections of knowledge such as SOPs, manuals, system-default help, PM guidance, inventory policies, or work-order rules. Each source belongs to one tenant and has a name, type, status, config JSON, document count, and timestamps.
+A source represents a logical collection of knowledge. Examples:
 
-The source list API returns a dashboard-ready model rather than exposing raw database rows. The UI uses that model to render active badges, system-default badges, document counts, and reindex actions.
+- System Help
+- Maintenance SOPs
+- Safety Procedures
+- PM Rules
+- Inventory Guidance
+- Equipment Manuals
+- Vendor Troubleshooting Notes
 
-## Document Intake
+Each source should have tenant scope, type, status, visibility, owner, review cadence, document count, and timestamps.
 
-Documents are stored under sources. Each document includes title, raw text, optional language, optional external ID, optional checksum, metadata, version, and status.
+## Document intake
 
-The intake path validates that title and text exist. It then writes the document and can automatically queue a full reindex. This keeps the admin workflow simple: paste the SOP or FAQ, save it, and the system creates the background work needed to make it searchable.
+A document belongs to a source. A practical document model includes:
 
-## Ingest Jobs
+- title;
+- raw text;
+- language;
+- external ID for repeat imports;
+- checksum;
+- metadata;
+- visibility;
+- version;
+- status;
+- review owner;
+- review due date.
 
-Ingest jobs decouple document writes from expensive processing. The API returns a job ID immediately, while the runner can execute after response finalization or through a worker endpoint.
+The intake flow should validate that title and text exist. It should also check that the user can write to the selected source.
 
-The job store normalizes status rows for the UI, clamps list limits, and caches short-lived list responses. Jobs include retry count, error text, timestamps, and stats JSON so admins can see what happened.
+## Reindex jobs
 
-## Chunking and Embeddings
+Reindex jobs decouple document writes from expensive processing.
 
-The ingest runner splits raw document text into overlapping chunks. In the observed implementation, reindexing uses 500-character chunks with 50 characters of overlap for the rebuild path. Overlap helps preserve context near boundaries, which matters for SOP steps and troubleshooting guidance.
+Why it matters:
 
-Embeddings are generated in batches. Batching reduces provider round trips and keeps ingest throughput more predictable. Chunks are persisted with ordinal order, token estimate, metadata, provider, model, dimension, and updated timestamp.
+- document saves stay fast;
+- embedding work can be retried;
+- admins can see status;
+- failed jobs do not disappear;
+- future durable queues can replace the local runner without changing the document API.
+
+## Chunking
+
+The sample implementation uses character-based chunking for clarity. In production, chunking can become smarter:
+
+- preserve headings;
+- keep numbered SOP steps together;
+- split by table rows when needed;
+- treat troubleshooting trees differently from normal prose;
+- tune overlap by document type.
+
+The important rule is that chunks are derived from source documents and can be rebuilt.
+
+## Embeddings
+
+Embeddings should be generated in batches. Store provider, model, dimension, and created timestamp with the vector. This makes future migrations easier.
 
 ## Retrieval
 
-The retrieval path clamps `topK`, normalizes query text, applies tenant and filter constraints, and runs full-text and vector branches in parallel.
+Retrieval should apply filters before answer generation:
 
-Full-text search is useful for exact terms like equipment codes, "waiting parts", "PM", "settings", or "export". Vector search is useful when users ask semantically similar questions with different wording. Rank fusion combines both so the answer layer receives a stronger evidence set.
+- tenant;
+- role;
+- source status;
+- document visibility;
+- language;
+- page context;
+- source type.
 
-## Answer Generation
+Hybrid retrieval is useful because CMMS users often mix exact labels with informal descriptions.
 
-The ask path uses retrieved chunks as the only evidence source. It builds context with numbered documents, asks for JSON output, extracts `[doc:n]` references, and returns citations mapped to retrieved chunks.
+## Answer generation
 
-The result includes:
+The answer layer should return a structured object:
 
-- Answer text.
-- Confidence.
-- Citations.
-- Retrieved hits.
-- Next actions.
+```json
+{
+  "answer": "...",
+  "confidence": 0.82,
+  "citations": [
+    { "sourceTitle": "Inventory Issue Rules", "chunkId": "chunk_123" }
+  ],
+  "nextActions": [
+    { "label": "Open work order parts", "route": "/work-orders/:id/parts" }
+  ],
+  "fallbackReason": null
+}
+```
 
-This response model is ready for an assistant panel because it has both explanation and UI actions.
+If evidence is weak, return a safe fallback and show the top retrieved hits. Do not invent procedure.
 
 ## Observability
 
-Search and ask routes write query logs after the response. Logs include latency, filters, confidence, retrieved chunk IDs, and citation IDs. The logging path is non-blocking and failure-tolerant.
+Track enough to improve the system:
 
-This is useful for later self-learning loops: low-confidence questions, empty retrievals, and repeated unanswered topics can become signals for content review.
+- empty retrievals;
+- low-confidence answers;
+- frequently asked questions;
+- stale citations;
+- slow retrieval;
+- failed ingest jobs;
+- sources with no owner;
+- sources past review due date.
+
+Do not log raw retrieved SOP text unless the organization has explicitly designed and approved that privacy model.

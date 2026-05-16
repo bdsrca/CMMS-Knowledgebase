@@ -1,64 +1,41 @@
-# Configuration Notes
+# Design Decisions
 
-This document summarizes the main configuration and implementation choices used by the
-knowledge-base workflow.
+## 1. Treat knowledge as managed content, not prompt context
 
-## Tenant-Scoped Data
+A maintenance knowledge base should have sources, documents, owners, versions, review status, and audit trails.
 
-Sources, documents, chunks, jobs, and query logs all carry tenant context.
+Prompt-only content is hard to govern. Managed content can be reviewed, searched, cited, and reindexed.
 
-That is the safe default for a CMMS because maintenance procedures, equipment names, policies,
-and settings are often tenant-specific.
+## 2. Reindex asynchronously
 
-## API-Controlled Admin Writes
+Embedding and chunking can be slow. Running this work inline makes the UI feel unreliable. A visible job model gives users status and gives engineers a clean retry boundary.
 
-Source creation, document creation, system-default refresh, and reindexing run through API
-routes with access checks.
+## 3. Use both keyword and semantic retrieval
 
-The UI does not write directly to persistence. This keeps tenant access, role checks, request
-IDs, validation, and error handling in one controlled path.
+Full-text search is good for exact terms such as `waiting parts`, `PM`, `WO`, `approval`, and asset names.
 
-## Reindex Jobs
+Semantic retrieval is good when users ask the same thing in different words.
 
-Embedding work can be slow, provider-dependent, and failure-prone.
+The two branches cover different failure modes, so rank fusion is a practical middle ground.
 
-The job model makes ingest work visible and retryable. Admin screens can show states such as
-`PENDING`, `PROCESSING`, `COMPLETED`, and `FAILED` instead of hiding indexing behind a save
-button.
+## 4. Require citations
 
-## Chunk Rebuilds
+Citations are the difference between a helpful CMMS assistant and a risky black box.
 
-Reindexing deletes existing chunks for a document and rebuilds from the current raw text.
+The user should be able to inspect the source document before acting on the answer.
 
-This keeps searchable state aligned with the source document and avoids stale chunks after a
-document update.
+## 5. Keep logs useful but narrow
 
-## Hybrid Retrieval
+Logs should support improvement without duplicating sensitive content.
 
-Full-text search and vector search solve different matching problems.
+Store query metadata, hit IDs, citation IDs, latency, filters, and confidence. Avoid raw retrieved SOP text.
 
-Full-text search handles exact CMMS terms, labels, and asset names. Vector search helps when a
-user phrases the question differently from the approved document. Rank fusion combines both
-result sets before evidence is sent to the answer layer.
+## 6. Keep operational writes guarded
 
-## Citations and Confidence
+A knowledge-base answer can suggest the next page or action. It should not silently update work orders, reserve parts, change PM templates, or rewrite policy.
 
-Answers include citations and confidence instead of returning only prose.
+Human review stays important, especially for safety-sensitive and compliance-sensitive work.
 
-This gives users a way to inspect the source material behind an answer before acting on
-operational guidance.
+## 7. Make review cadence visible
 
-## Metadata-Oriented Query Logs
-
-The query log stores identifiers, timing, confidence, filters, and citation metadata.
-
-Raw retrieved chunk text is not copied into the log table. This keeps logs useful for review
-without creating another store of private SOP or manual content.
-
-## Deterministic Next Actions
-
-The assistant can suggest actions such as opening work orders, inventory, PM, equipment, or KB
-settings based on route and query context.
-
-Those actions keep answers connected to the operational workflow instead of leaving users with a
-generic text response.
+A stale SOP can be worse than no SOP. Sources and documents should have owner and review cadence fields so admins can maintain quality over time.

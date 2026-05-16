@@ -1,0 +1,50 @@
+[
+  {
+    "company": "Midea Building Technologies",
+    "public_signal": "AI-empowered chiller lighthouse factory and smart O&M recommendations",
+    "maintenance_angle": "Chillers connect product design, service diagnostics, energy performance, and after-sales knowledge.",
+    "kb_takeaway": "A CMMS knowledge base should connect equipment manuals, fault guidance, warranty rules, and field service feedback."
+  },
+  {
+    "company": "SANY Group",
+    "public_signal": "No. 18 Factory and intelligent heavy-equipment manufacturing footprint",
+    "maintenance_angle": "Heavy equipment combines factory assets, field fleets, telematics, parts, and service procedures.",
+    "kb_takeaway": "Retrieval should handle both plant maintenance SOPs and field-service troubleshooting evidence."
+  },
+  {
+    "company": "State Grid",
+    "public_signal": "Drone inspection and defect recognition for grid assets",
+    "maintenance_angle": "Inspection results must become actionable defects, work orders, and safety-aware procedures.",
+    "kb_takeaway": "A KB can map defect codes and inspection findings to approved repair guidance."
+  },
+  {
+    "company": "CRRC",
+    "public_signal": "SmartCare-style lifecycle intelligent O&M for rail equipment",
+    "maintenance_angle": "Rail assets require traceable procedures, safety rules, reliability history, and fleet lifecycle data.",
+    "kb_takeaway": "Answers must cite approved maintenance procedures and stay conservative for safety-critical work."
+  },
+  {
+    "company": "Huawei / industrial connectivity ecosystem",
+    "public_signal": "Fully connected factory solutions and industrial networking",
+    "maintenance_angle": "Connected machines create more operational context, but also more fragmented data sources.",
+    "kb_takeaway": "The KB needs clean source governance and context filters before AI answers are generated."
+  },
+  {
+    "company": "COSMOPlat / industrial internet ecosystem",
+    "public_signal": "Industrial internet, digital twins, device connectivity, and scenario solutions",
+    "maintenance_angle": "Factories increasingly manage assets, energy, production operations, and digital twins together.",
+    "kb_takeaway": "CMMS knowledge should connect asset procedures with production and energy context."
+  },
+  {
+    "company": "Sinopec / process industry",
+    "public_signal": "Digital and intelligent development and smart-factory construction",
+    "maintenance_angle": "Process plants need policy-aware maintenance, permits, reliability plans, and shutdown knowledge.",
+    "kb_takeaway": "The KB should treat safety and procedure citations as first-class answer requirements."
+  },
+  {
+    "company": "Baowu / Baosteel",
+    "public_signal": "Industrial AI and online inspection scenarios in steel production",
+    "maintenance_angle": "Quality inspection and production reliability depend on equipment condition and process knowledge.",
+    "kb_takeaway": "Inspection findings should be connected to equipment history, root-cause playbooks, and maintenance actions."
+  }
+]

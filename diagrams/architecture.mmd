@@ -2,22 +2,23 @@ flowchart TD
     Admin[Admin user] --> UI[Knowledge Base settings UI]
     UI --> SourcesAPI[Sources API]
     UI --> DocsAPI[Documents API]
-    UI --> JobsAPI[Jobs and worker APIs]
+    UI --> JobsAPI[Jobs API]
 
-    SourcesAPI --> DB[(Postgres)]
+    SourcesAPI --> DB[(Tenant-scoped data store)]
     DocsAPI --> DB
     DocsAPI --> JobStore[Ingest job store]
     JobsAPI --> Runner[Ingest runner]
-    JobStore --> DB
+    JobStore --> Runner
     Runner --> Chunker[Text chunker]
     Runner --> Embedder[Embedding provider]
     Chunker --> DB
     Embedder --> DB
 
-    User[Technician or admin] --> AskAPI[KB ask/search API]
-    AskAPI --> Retrieval[Hybrid retrieval]
+    User[Technician / planner / admin] --> AskAPI[Ask and search API]
+    AskAPI --> Filters[Tenant + role filters]
+    Filters --> Retrieval[Hybrid retrieval]
     Retrieval --> DB
-    Retrieval --> Chat[AI answer generation]
-    Chat --> Answer[Cited answer + confidence + next actions]
-    AskAPI --> QueryLog[Non-blocking query log]
+    Retrieval --> Answer[Grounded answer package]
+    Answer --> User
+    AskAPI --> QueryLog[Metadata query log]
     QueryLog --> DB

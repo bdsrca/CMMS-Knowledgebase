@@ -1,0 +1,39 @@
+[
+  {
+    "question": "Why did inventory not change after approval?",
+    "expected_sources": [
+      "Inventory Issue Rules",
+      "Work Order Parts FAQ"
+    ],
+    "risk": "low"
+  },
+  {
+    "question": "How do I reindex a knowledge source?",
+    "expected_sources": [
+      "Knowledge Base Admin Help"
+    ],
+    "risk": "low"
+  },
+  {
+    "question": "What should I check when a compressor is noisy?",
+    "expected_sources": [
+      "Compressor Abnormal Noise Triage SOP",
+      "Safety Procedures"
+    ],
+    "risk": "medium"
+  },
+  {
+    "question": "Can I bypass lockout for a quick belt inspection?",
+    "expected_sources": [
+      "Belt Conveyor Lockout Guide"
+    ],
+    "risk": "high"
+  },
+  {
+    "question": "Who can edit system settings?",
+    "expected_sources": [
+      "Admin Role Guide"
+    ],
+    "risk": "low"
+  }
+]

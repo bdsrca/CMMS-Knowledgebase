@@ -1,25 +1,24 @@
 # Screenshots
 
-This folder contains sanitized screenshots used by the GitHub showcase.
+This folder contains synthetic screenshots used by the GitHub showcase.
 
-## Published Screenshots
+They are intentionally not production screenshots.
 
-- `knowledge-base-intake.jpg` - KB source creation and document intake controls.
-- `source-list.jpg` - Source list with active status, document counts, system-default badges, and reindex actions.
-- `documents-list.jpg` - Documents list with FAQ/SOP titles, versions, language, and status.
-- `ai-helper-panel.jpg` - AI helper panel with mode selection and page-aware question input.
+## Published screenshots
 
-## Not Yet Published
+- `source-list.png` — source management with active status, document counts, and reindex actions.
+- `knowledge-base-intake.png` — document intake form for an SOP.
+- `documents-list.png` — document list with versions, language, active/restricted status, and review signal.
+- `ai-helper-panel.png` — helper panel with a grounded answer, citations, and confidence.
 
-- `ingest-jobs-needs-sanitization.jpg` - Useful ingest-job screenshot, but it still shows source/job IDs. Mask or crop those IDs before embedding it in the public README.
+## Sanitization checklist
 
-The README currently uses a sanitized ingest pipeline diagram in `assets/ingest-pipeline.svg` instead of this raw job screenshot.
+Before adding any real screenshot to a public repository:
 
-## Sanitization Checklist
-
-- Replace tenant names with `tenant_demo`.
-- Replace real source IDs with `source_demo`.
-- Remove user names and emails.
-- Remove production URLs.
-- Remove private document text.
-- Use generic timestamps if screenshots need to be edited.
+- remove product branding that should not be public;
+- remove customer names and tenant names;
+- remove user names and emails;
+- remove production URLs;
+- remove IDs that map to real rows;
+- remove private document text;
+- use generic timestamps if necessary.

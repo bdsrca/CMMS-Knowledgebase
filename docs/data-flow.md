@@ -1,43 +1,51 @@
 # Data Flow
 
-## Ingest Flow
+## Ingest flow
 
-1. An admin creates or selects a KB source.
-2. The admin saves a document with title, raw text, language, and optional metadata.
-3. The document API validates the request and writes the document under the current tenant.
-4. The API creates a `PENDING` ingest job.
-5. The worker claims the job and moves it to `PROCESSING`.
-6. The runner reads active documents for the source.
-7. Existing chunks for each document are deleted.
-8. Raw text is split into overlapping chunks.
-9. Chunks are embedded in batches.
-10. Chunk rows are written with metadata and optional vector embeddings.
-11. The job is marked `COMPLETED` with stats, or `FAILED` with error details.
+1. Admin creates or selects a knowledge source.
+2. Admin saves a document with title, raw text, language, visibility, and metadata.
+3. API validates tenant access and role permissions.
+4. API creates or updates the document.
+5. API creates a `PENDING` reindex job.
+6. Worker claims the job and moves it to `PROCESSING`.
+7. Runner reads active documents for the source.
+8. Runner deletes old chunks for each document.
+9. Runner splits raw text into overlapping chunks.
+10. Runner generates embeddings in batches.
+11. Runner writes searchable chunk rows.
+12. Job is marked `COMPLETED` with stats or `FAILED` with error details.
 
-## Ask/Search Flow
+![Ingest flow](../assets/ingest-pipeline.svg)
 
-1. A user asks a question from the assistant panel or search endpoint.
-2. The API resolves tenant access and derives role/UI filters.
-3. Retrieval runs full-text search and vector search in parallel.
-4. Results are merged with reciprocal rank fusion.
-5. The ask layer builds numbered context from the top hits.
-6. The AI runtime returns structured JSON containing answer, confidence, and next actions.
-7. Citations are extracted from `[doc:n]` references.
-8. The API returns answer, confidence, citations, next actions, and hits.
-9. A query log is written after the response.
+## Ask/search flow
 
-## Self-Learning Loop
+1. User asks a question from the current page or helper panel.
+2. API resolves tenant, role, and UI context.
+3. Retrieval applies tenant and role filters.
+4. Full-text and semantic search run in parallel.
+5. Rank fusion merges results.
+6. Answer layer builds a grounded context block.
+7. AI runtime returns structured answer, confidence, citations, and next actions.
+8. API maps citations back to chunks and documents.
+9. Query log is written after response.
 
-The system does not silently rewrite policy or invent new SOPs. Instead, it creates a feedback loop:
+![Hybrid retrieval](../assets/hybrid-retrieval.svg)
 
-- Low-confidence questions reveal weak content coverage.
-- Empty retrievals reveal missing documents or poor source labels.
-- Frequent queries reveal training needs.
-- Citation patterns reveal which documents are most operationally useful.
-- Ingest job failures reveal source or embedding pipeline issues.
+## Feedback flow
 
-Those signals can guide admins to improve source documents, review stale procedures, and refresh system-default packs.
+The system does not silently rewrite source documents.
 
-## Diagram
+Instead, it creates improvement signals:
 
-See [../diagrams/data-flow.mmd](../diagrams/data-flow.mmd).
+- low-confidence answers;
+- no-result searches;
+- repeated questions;
+- stale citations;
+- sources due for review;
+- failed ingest jobs;
+- documents with low citation usage;
+- high-latency retrieval calls.
+
+Admins and content owners use those signals to improve documents and reindex.
+
+![Knowledge lifecycle](../assets/knowledge-lifecycle.svg)

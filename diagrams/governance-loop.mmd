@@ -1,0 +1,12 @@
+flowchart LR
+    Draft[Draft or imported content] --> Review[Owner review]
+    Review --> Active[Approved active source]
+    Active --> Index[Reindex]
+    Index --> Answer[Cited answers]
+    Answer --> Signals[Quality signals]
+    Signals --> Backlog[Content review backlog]
+    Backlog --> Review
+
+    Signals -->|low confidence| Missing[Missing or weak content]
+    Signals -->|stale citation| Stale[Review due]
+    Signals -->|no results| Coverage[Coverage gap]

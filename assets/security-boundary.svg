@@ -1,76 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="700" viewBox="0 0 1400 700" role="img" aria-label="Security and privacy boundaries for CMMS knowledge base">
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="720" viewBox="0 0 1400 720" role="img">
   <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f8fbff"/>
+      <stop offset="0.58" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#eef6ff"/>
+    </linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L8,3 L0,6 Z" fill="#2563eb"/>
+    </marker>
     <style>
-      .bg { fill: #ffffff; }
-      .title { font: 700 34px Arial, sans-serif; fill: #0f1f46; }
-      .tenantA { fill: #f8fbff; stroke: #2563eb; stroke-width: 2; rx: 18; }
-      .tenantB { fill: #f7fffd; stroke: #0f766e; stroke-width: 2; rx: 18; }
-      .box { fill: #ffffff; stroke: #c6d6ee; stroke-width: 1.6; rx: 12; }
-      .warn { fill: #fff7f7; stroke: #dc2626; stroke-width: 1.8; rx: 12; }
-      .text { font: 700 18px Arial, sans-serif; fill: #10203f; }
-      .small { font: 600 14px Arial, sans-serif; fill: #40516f; }
-      .red { font: 700 18px Arial, sans-serif; fill: #b91c1c; }
-      .arrow { stroke: #2563eb; stroke-width: 3.5; fill: none; marker-end: url(#arrowhead); }
-      .block { stroke: #dc2626; stroke-width: 3; stroke-dasharray: 8 8; fill: none; marker-end: url(#redhead); marker-start: url(#redhead); }
+      .muted { fill:#64748b; }
+      .small { font-size:13px; }
+      .label { font-family: Inter, Segoe UI, Arial, sans-serif; }
     </style>
-    <marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#2563eb"/>
-    </marker>
-    <marker id="redhead" markerWidth="12" markerHeight="12" refX="6" refY="6" orient="auto">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#dc2626"/>
-    </marker>
   </defs>
-  <rect class="bg" width="1400" height="700"/>
-  <text class="title" x="450" y="60">Security and Privacy Boundaries</text>
-
-  <rect class="tenantA" x="45" y="105" width="410" height="210" rx="18"/>
-  <text class="text" x="85" y="145">Tenant A Knowledge Base</text>
-  <rect class="box" x="85" y="175" width="140" height="95" rx="12"/>
-  <text class="small" x="112" y="210">SOPs</text><text class="small" x="112" y="235">FAQs</text><text class="small" x="112" y="260">Manuals</text>
-  <rect class="box" x="250" y="175" width="165" height="95" rx="12"/>
-  <text class="small" x="276" y="210">Admin-only docs</text><text class="small" x="276" y="235">Policies</text><text class="small" x="276" y="260">Playbooks</text>
-
-  <rect class="tenantB" x="45" y="385" width="410" height="210" rx="18"/>
-  <text class="text" x="85" y="425">Tenant B Knowledge Base</text>
-  <rect class="box" x="85" y="455" width="140" height="95" rx="12"/>
-  <text class="small" x="112" y="490">SOPs</text><text class="small" x="112" y="515">FAQs</text><text class="small" x="112" y="540">Manuals</text>
-  <rect class="box" x="250" y="455" width="165" height="95" rx="12"/>
-  <text class="small" x="276" y="490">Admin-only docs</text><text class="small" x="276" y="515">Policies</text><text class="small" x="276" y="540">Playbooks</text>
-
-  <line class="block" x1="250" y1="330" x2="250" y2="370"/>
-  <text class="red" x="105" y="358">No cross-tenant access</text>
-
-  <rect class="tenantA" x="530" y="105" width="330" height="250" rx="18"/>
-  <text class="text" x="570" y="145">Role-Based Access Layer</text>
-  <rect class="box" x="565" y="175" width="260" height="145" rx="12"/>
-  <text class="small" x="595" y="210">Admin: full access</text>
-  <text class="small" x="595" y="240">Editor: standard access</text>
-  <text class="small" x="595" y="270">Viewer: public content only</text>
-  <text class="small" x="595" y="300">Admin-only docs require Admin</text>
-
-  <rect class="tenantB" x="530" y="405" width="330" height="170" rx="18"/>
-  <text class="text" x="570" y="445">Ask/Search API</text>
-  <rect class="box" x="565" y="475" width="260" height="65" rx="12"/>
-  <text class="small" x="590" y="502">Tenant and role filters apply</text>
-  <text class="small" x="590" y="522">before retrieval</text>
-
-  <line class="arrow" x1="455" y1="210" x2="520" y2="210"/>
-  <line class="arrow" x1="455" y1="490" x2="520" y2="490"/>
-  <line class="arrow" x1="695" y1="355" x2="695" y2="395"/>
-
-  <rect class="tenantA" x="935" y="135" width="380" height="175" rx="18"/>
-  <text class="text" x="975" y="175">Protected Retrieval</text>
-  <rect class="box" x="975" y="205" width="300" height="65" rx="12"/>
-  <text class="small" x="1000" y="232">Only allowed documents pass through</text>
-  <text class="small" x="1000" y="252">based on tenant and role</text>
-
-  <rect class="tenantB" x="935" y="385" width="380" height="185" rx="18"/>
-  <text class="text" x="975" y="425">Privacy-Conscious Query Log</text>
-  <rect class="box" x="975" y="455" width="300" height="80" rx="12"/>
-  <text class="small" x="1000" y="482">Stores route, latency, confidence</text>
-  <text class="small" x="1000" y="504">Stores chunk IDs and citation IDs</text>
-  <text class="small" x="1000" y="526">Does not store raw SOP text</text>
-
-  <line class="arrow" x1="860" y1="490" x2="925" y2="490"/>
-  <line class="arrow" x1="860" y1="230" x2="925" y2="230"/>
-</svg>
+  <rect width="1400" height="720" rx="24" fill="url(#bg)"/>
+<text x="48" y="68" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:36px; font-weight:800; fill:#0f172a;"><tspan x="48" dy="0">Security and Privacy Boundary</tspan></text><text x="50" y="105" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:17px; font-weight:400; fill:#475569;"><tspan x="50" dy="0">The same knowledge workflow can be useful and still avoid leaking tenant data or turning logs into a second document store.</tspan></text><rect x="82" y="173" width="380" height="130" rx="22" fill="#0f172a" opacity="0.06"/><rect x="80" y="170" width="380" height="130" rx="22" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/><text x="115" y="215" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:24px; font-weight:800; fill:#0f172a;"><tspan x="115" dy="0">Tenant A</tspan></text><text x="115" y="252" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:15px; font-weight:400; fill:#475569;"><tspan x="115" dy="0">Only Tenant A sources, documents, chunks,</tspan><tspan x="115" dy="20">jobs, and logs are visible here.</tspan></text><rect x="82" y="328" width="380" height="130" rx="22" fill="#0f172a" opacity="0.06"/><rect x="80" y="325" width="380" height="130" rx="22" fill="#f0fdf4" stroke="#86efac" stroke-width="1.2"/><text x="115" y="370" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:24px; font-weight:800; fill:#0f172a;"><tspan x="115" dy="0">Tenant B</tspan></text><text x="115" y="407" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:15px; font-weight:400; fill:#475569;"><tspan x="115" dy="0">Tenant B has a separate boundary.</tspan><tspan x="115" dy="20">Retrieval never mixes evidence across</tspan><tspan x="115" dy="20">tenants.</tspan></text><rect x="82" y="483" width="380" height="130" rx="22" fill="#0f172a" opacity="0.06"/><rect x="80" y="480" width="380" height="130" rx="22" fill="#fff7ed" stroke="#fdba74" stroke-width="1.2"/><text x="115" y="525" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:24px; font-weight:800; fill:#0f172a;"><tspan x="115" dy="0">System default pack</tspan></text><text x="115" y="562" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:15px; font-weight:400; fill:#475569;"><tspan x="115" dy="0">Shared templates are imported into tenant</tspan><tspan x="115" dy="20">context before use.</tspan></text><rect x="537" y="183" width="360" height="410" rx="24" fill="#0f172a" opacity="0.06"/><rect x="535" y="180" width="360" height="410" rx="24" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/><text x="575" y="235" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:24px; font-weight:800; fill:#0f172a;"><tspan x="575" dy="0">Access checks before retrieval</tspan></text><rect x="575" y="267" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="286" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="285" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Resolve tenant access</tspan></text><rect x="575" y="315" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="334" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="333" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Apply role visibility</tspan></text><rect x="575" y="363" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="382" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="381" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Filter active sources</tspan></text><rect x="575" y="411" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="430" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="429" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Filter metadata and language</tspan></text><rect x="575" y="459" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="478" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="477" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Limit returned evidence</tspan></text><rect x="575" y="507" width="28" height="28" rx="14" fill="#dcfce7" stroke="#86efac"/><text x="589" y="526" text-anchor="middle" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:13px; font-weight:700; fill:#047857;"><tspan x="589" dy="0">✓</tspan></text><text x="620" y="525" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:600; fill:#334155;"><tspan x="620" dy="0">Generate cited answer</tspan></text><line x1="462" y1="330" x2="532" y2="330" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/><line x1="898" y1="330" x2="970" y2="330" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" marker-end="url(#arrow)"/><rect x="982" y="183" width="340" height="410" rx="24" fill="#0f172a" opacity="0.06"/><rect x="980" y="180" width="340" height="410" rx="24" fill="#fff1f2" stroke="#fecdd3" stroke-width="1.2"/><text x="1020" y="235" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:24px; font-weight:800; fill:#881337;"><tspan x="1020" dy="0">Logging boundary</tspan></text><text x="1020" y="280" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:16px; font-weight:500; fill:#475569;"><tspan x="1020" dy="0">Logs are useful, but they should</tspan><tspan x="1020" dy="22">not become a shadow copy of</tspan><tspan x="1020" dy="22">private SOPs.</tspan></text><text x="1020" y="360" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:18px; font-weight:800; fill:#0f172a;"><tspan x="1020" dy="0">Store:</tspan></text><text x="1085" y="360" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:15px; font-weight:400; fill:#475569;"><tspan x="1085" dy="0">query metadata, latency, route,</tspan><tspan x="1085" dy="20">confidence, chunk IDs, citation</tspan><tspan x="1085" dy="20">IDs</tspan></text><text x="1020" y="455" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:18px; font-weight:800; fill:#0f172a;"><tspan x="1020" dy="0">Avoid:</tspan></text><text x="1085" y="455" text-anchor="start" style="font-family: Inter, Segoe UI, Arial, sans-serif; font-size:15px; font-weight:400; fill:#475569;"><tspan x="1085" dy="0">raw retrieved SOP text, customer</tspan><tspan x="1085" dy="20">names, production URLs,</tspan><tspan x="1085" dy="20">credentials</tspan></text></svg>

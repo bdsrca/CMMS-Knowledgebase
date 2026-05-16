@@ -4,7 +4,7 @@ sequenceDiagram
     participant API as Tenant API
     participant Jobs as Ingest Job Store
     participant Runner as Ingest Runner
-    participant DB as Postgres + Vector Index
+    participant DB as Searchable Store
     participant User
     participant Ask as Ask/Search API
     participant AI as AI Runtime
@@ -15,14 +15,11 @@ sequenceDiagram
     API->>Jobs: Create PENDING reindex job
     API-->>UI: Return document + jobId
     Jobs->>Runner: Claim job
-    Runner->>DB: Read active documents for source
-    Runner->>Runner: Chunk text and create embeddings
     Runner->>DB: Replace searchable chunks
     Runner->>Jobs: Mark COMPLETED or FAILED
-
     User->>Ask: Ask maintenance question
-    Ask->>DB: Retrieve FTS and vector hits
+    Ask->>DB: Retrieve filtered keyword and semantic hits
     Ask->>AI: Send grounded context only
-    AI-->>Ask: JSON answer with confidence and actions
-    Ask->>DB: Write query log after response
+    AI-->>Ask: JSON answer with confidence and citations
+    Ask->>DB: Write metadata query log
     Ask-->>User: Return cited answer

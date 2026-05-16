@@ -1,33 +1,53 @@
 # Future Improvements
 
-## File Uploads and Parsing
+## File parsing
 
-Add secure upload support for PDF, DOCX, CSV, and HTML sources. Parsing should produce normalized text plus metadata while preserving source references for citations.
+Add secure upload and parsing for PDF, DOCX, CSV, HTML, and vendor manual formats.
 
-## Incremental Reindex
+Parsing should produce normalized text plus source references that can be used in citations.
 
-Use checksums to skip unchanged documents and chunk-level hashes to avoid re-embedding unchanged chunks.
+## Incremental reindex
 
-## Durable Queue
+Use document checksums and chunk hashes to avoid re-embedding unchanged text.
 
-Move ingest execution to a durable queue if volume grows. The current job model already creates a clean boundary for this change.
+## Durable queue
 
-## Evaluation Dashboard
+Move ingest execution to a durable queue when volume grows. The current job model already creates a clean boundary for this.
 
-Promote golden question runs into an admin dashboard that shows pass rate, citation quality, low-confidence topics, and missing coverage.
+## Evaluation dashboard
 
-## Content Governance
+Promote golden-question runs into an admin dashboard with:
 
-Add review cadence, owner, expiration date, and approval status to sources and documents. This would help teams avoid stale SOPs.
+- pass rate;
+- citation quality;
+- no-result queries;
+- low-confidence topics;
+- stale documents;
+- source coverage gaps.
 
-## Role-Specific Knowledge Views
+## Content governance
 
-Expand metadata filters so content can be targeted to admins, technicians, supervisors, planners, or inventory teams.
+Add owner, review cadence, approval status, and stale-content warnings to sources and documents.
 
-## Better Multilingual Handling
+## Role-specific knowledge views
+
+Expand metadata filters so documents can be targeted to admins, technicians, supervisors, planners, inventory teams, contractors, or site-specific groups.
+
+## Multilingual support
 
 Add language-aware chunking and retrieval tuning for bilingual maintenance teams.
 
-## Human Feedback
+## Human feedback
 
-Let users mark answers as helpful, stale, incomplete, or unsafe. Feed that signal into content review rather than allowing the AI to change source content automatically.
+Let users mark answers as helpful, stale, incomplete, or unsafe. Feed those signals into content review instead of allowing the AI to rewrite source content automatically.
+
+## Deeper CMMS/EAM integration
+
+Connect answers to safe next actions:
+
+- open work order;
+- open equipment history;
+- open PM template;
+- open inventory issue log;
+- open source document;
+- create content review task.

@@ -1,201 +1,124 @@
-# Code Examples
+# Selected Code Walkthrough
 
-These snippets are short, public-safe examples of the knowledge-base behavior described in the
-README. They are intentionally sanitized: tenant IDs, user IDs, production URLs, private source
-names, credentials, and raw operational documents are not included.
+These snippets are public-safe examples adapted to explain the design. They do not expose private routes, credentials, tenant IDs, production URLs, or raw operational documents.
 
-## Snippet 1: Document Intake Queues Reindex Automatically
+## Snippet 1: document save queues reindex
 
-### What it does
+### Problem
 
-Saves tenant-scoped documents and queues reindexing when `autoReindex` is enabled. External IDs
-support repeat imports and system-default refreshes without creating duplicate documents.
+Admins need to add or update SOPs without remembering a separate indexing command.
 
-### Code
+### Decision
+
+Save the document through a tenant-scoped API path, increment version when needed, and queue a reindex job when `autoReindex` is enabled.
 
 ```ts
-const docs = rows.map(normalizeDoc).filter(Boolean);
-if (!docs.length) {
-  throw new AppError({
-    status: 400,
-    code: "BAD_REQUEST",
-    message: "Each document requires title and rawText.",
-  });
-}
+async function saveKbDocument(input: SaveDocumentInput, actor: Actor) {
+  assertCanManageSource(actor, input.tenantId, input.sourceId);
 
-for (const doc of docs) {
-  const saved = doc.externalId
-    ? await db.kbDocument.upsert({
-        where: {
-          tenantId_sourceId_externalId: {
-            tenantId,
-            sourceId,
-            externalId: doc.externalId,
-          },
-        },
-        create: { tenantId, sourceId, ...doc, version: 1 },
-        update: { ...doc, version: { increment: 1 } },
-      })
-    : await db.kbDocument.create({
-        data: { tenantId, sourceId, ...doc, version: 1 },
-      });
-
-  savedDocuments.push(saved);
-}
-
-invalidateKbSourcesCache(tenantId);
-invalidateKbDocumentsCache(tenantId);
-
-if (autoReindex) {
-  const jobId = await createKbIngestJob({
-    tenantId,
-    sourceId,
-    createdByUserId,
-    mode: "full",
+  const document = await upsertDocument({
+    tenantId: input.tenantId,
+    sourceId: input.sourceId,
+    externalId: input.externalId,
+    title: input.title,
+    rawText: input.rawText,
+    language: input.language ?? "en",
+    visibility: input.visibility ?? "all_roles"
   });
 
-  queuePostResponseWork(() => runKbIngestJob({ tenantId, jobId }));
+  if (input.autoReindex) {
+    const job = await createIngestJob({
+      tenantId: input.tenantId,
+      sourceId: input.sourceId,
+      createdByUserId: actor.id,
+      mode: "full"
+    });
+
+    queuePostResponseWork(() => runIngestJob(job.id));
+  }
+
+  return document;
 }
 ```
 
-### Behavior
+### Impact
 
-The important pattern is not the specific ORM call. It is the coupling of managed document save,
-versioning, cache invalidation, and explicit reindex scheduling inside one tenant-scoped
-workflow.
+The UI remains simple, source content stays versioned, and indexing work is visible.
 
-## Snippet 2: Ingest Jobs Are Claimed Before Processing
+## Snippet 2: worker claims a job before processing
 
-### What it does
+### Problem
 
-Claims a tenant-scoped ingest job before processing begins. Only jobs in `PENDING` or `FAILED`
-state can move into `PROCESSING`.
+Reindexing can be retried or triggered more than once.
 
-### Code
+### Decision
+
+Only claim a job when tenant and state match.
 
 ```ts
-export async function claimKbIngestJob(
-  jobId: string,
-  tenantId: string
-): Promise<boolean> {
-  const rows = await db.query`
-    UPDATE "KbIngestJob"
-    SET status = 'PROCESSING',
-        "startedAt" = NOW(),
-        "completedAt" = NULL,
-        error = NULL,
-        "updatedAt" = NOW()
-    WHERE id = ${jobId}
-      AND "tenantId" = ${tenantId}
-      AND status IN ('PENDING', 'FAILED')
-    RETURNING id
-  `;
+async function claimIngestJob(jobId: string, tenantId: string) {
+  const rows = await db.query(`
+    update KbIngestJob
+       set status = 'PROCESSING', startedAt = now(), error = null
+     where id = $1
+       and tenantId = $2
+       and status in ('PENDING', 'FAILED')
+     returning id
+  `, [jobId, tenantId]);
 
-  return rows.length > 0;
+  return rows.length === 1;
 }
 ```
 
-### Behavior
+### Impact
 
-The state transition happens before chunking or embedding begins. That makes retries observable
-and prevents a worker from processing a job it does not own.
+The system avoids duplicate work and protects tenant boundaries.
 
-## Snippet 3: Reindex Rebuilds Chunks and Embeddings
-
-### What it does
-
-Rebuilds searchable chunks from the latest document text and generates embeddings in batches.
-Overlap keeps nearby procedure steps available across chunk boundaries.
-
-### Code
+## Snippet 3: chunking with overlap
 
 ```ts
-await db.execute`
-  DELETE FROM "KbChunk"
-  WHERE "tenantId" = ${tenantId}
-    AND "documentId" = ${documentId}
-`;
-
-const chunks = splitIntoChunks(rawText, {
-  chunkChars: 500,
-  overlapChars: 50,
+const chunks = splitIntoChunks(document.rawText, {
+  maxChars: 500,
+  overlapChars: 50
 });
-
-const vectors = await embedChunksInBatches(
-  chunks.map((chunk) => chunk.content),
-  100
-);
-
-for (const [index, chunk] of chunks.entries()) {
-  await insertKbChunk({
-    tenantId,
-    documentId,
-    ordinal: chunk.ordinal,
-    content: chunk.content,
-    tokenCount: chunk.tokenCount,
-    embedding: vectors[index] ?? null,
-    metadata,
-  });
-}
 ```
 
-### Behavior
+Overlap helps preserve context across SOP step boundaries.
 
-The old chunks are removed before replacement chunks are written. That keeps retrieval from
-mixing stale and current document versions.
-
-## Snippet 4: Hybrid Retrieval Combines Full-Text and Vector Search
-
-### What it does
-
-Runs full-text search and vector search in parallel, then combines results with reciprocal rank
-fusion before evidence is sent to the answer layer.
-
-### Code
+## Snippet 4: hybrid retrieval
 
 ```ts
-export async function retrieveKbHits(input: {
-  tenantId: string;
-  query: string;
-  filters?: KbQueryFilters;
-  topK?: number;
-}) {
-  const query = normalizeText(input.query);
-  const topK = clampTopK(input.topK);
-  if (!query) return [];
+const [keywordHits, semanticHits] = await Promise.all([
+  searchByFullText({ tenantId, query, filters, topK }),
+  searchByVector({ tenantId, query, filters, topK })
+]);
 
-  const [ftsHits, vectorHits] = await Promise.all([
-    searchByFullText({
-      tenantId: input.tenantId,
-      query,
-      topK,
-      filters: input.filters,
-    }),
-    searchByVector({
-      tenantId: input.tenantId,
-      query,
-      topK,
-      filters: input.filters,
-    }),
-  ]);
-
-  return reciprocalRankFusion(ftsHits, vectorHits, topK);
-}
+const hits = reciprocalRankFusion([keywordHits, semanticHits], { limit: topK });
 ```
 
-### Behavior
+Full-text search catches exact CMMS terms. Semantic search catches paraphrased questions.
 
-Full-text search is useful for exact asset names, status labels, and CMMS terms. Vector search
-helps when a user phrases the question differently from the approved document.
+## Snippet 5: cited answer package
 
-## Snippet 5: Query Logs Avoid Raw Chunk Text
+```ts
+return {
+  answer,
+  confidence,
+  citations: hits.slice(0, 3).map((hit, index) => ({
+    index: index + 1,
+    documentTitle: hit.documentTitle,
+    chunkId: hit.chunkId,
+    score: hit.score
+  })),
+  nextActions,
+  retrievedHits: hits,
+  fallbackReason: confidence < 0.45 ? "weak_evidence" : null
+};
+```
 
-### What it does
+The answer can be inspected because citations map back to retrieved chunks.
 
-Stores query metadata, filter context, timing, retrieved chunk IDs, and citation IDs. Raw
-retrieved chunk content is not copied into the query log.
-
-### Code
+## Snippet 6: privacy-conscious query log
 
 ```ts
 await db.kbQueryLog.create({
@@ -206,26 +129,15 @@ await db.kbQueryLog.create({
     query,
     latencyMs,
     confidence,
-    filtersJson: {
-      ...filters,
-      _metrics: {
-        topScore,
-        avgScore,
-        hitCount: hits.length,
-      },
-    },
-    retrievedChunkIds: hits.map((hit) => hit.chunkId),
-    answerCitationsJson: citations.map((citation) => ({
-      index: citation.index,
+    filtersJson: filters,
+    retrievedChunkIds: hits.map(hit => hit.chunkId),
+    answerCitationsJson: citations.map(citation => ({
       chunkId: citation.chunkId,
-      documentId: citation.documentId,
-      score: citation.score,
-    })),
-  },
+      documentTitle: citation.documentTitle,
+      score: citation.score
+    }))
+  }
 });
 ```
 
-### Behavior
-
-The query text and metadata can still help diagnose poor answers. The privacy boundary is that
-retrieved SOP/manual content is referenced by ID instead of copied into logs.
+The log references evidence by ID. It does not copy raw retrieved SOP text into the log.

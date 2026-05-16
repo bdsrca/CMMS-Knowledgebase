@@ -1,0 +1,26 @@
+[
+  {
+    "name": "System Help",
+    "type": "default_pack",
+    "reviewCadenceDays": 180,
+    "visibility": "all_roles"
+  },
+  {
+    "name": "Maintenance SOPs",
+    "type": "tenant_source",
+    "reviewCadenceDays": 90,
+    "visibility": "technician_planner_supervisor"
+  },
+  {
+    "name": "Inventory Rules",
+    "type": "tenant_source",
+    "reviewCadenceDays": 120,
+    "visibility": "planner_inventory_admin"
+  },
+  {
+    "name": "Safety Procedures",
+    "type": "restricted_source",
+    "reviewCadenceDays": 60,
+    "visibility": "authorized_roles_only"
+  }
+]
